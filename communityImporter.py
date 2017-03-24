@@ -25,6 +25,7 @@ if doctype == partition:
 
     if detectionmethod == Infomap:
         data: A 2D numpy array giving the data
+        N: the infomap N i.e. number of repeated runs (if known)
 
 if doctype == pdbfile:
     data: The PDBfile itself
@@ -37,6 +38,7 @@ import pymongo
 import glob
 import os
 import datetime
+from pythonModules import treeFileToNumpyArray
 
 if __name__ == "__main__":
     client = pymongo.MongoClient()
@@ -46,32 +48,36 @@ if __name__ == "__main__":
     # The contact networks are stored in /home/will/MainProject/Topology/contactnetworks/????/,
     #  where ???? is the PDB reference
 
-    edgelists = glob.glob(
-        "/home/will/MainProject/Topology/contactnetworks/????/????.?.?.dat")
-    edgelisttype = "residue"
-    doctype = "edgelist"
-    hydrogenstatus = "noH"
-    for edgelist in edgelists:
-        pdbref = os.path.basename(edgelist)[:4]
-        scaling = float(os.path.basename(edgelist)[5:-4])
-        lastmodified = datetime.datetime.utcnow()
-        assert scaling in [2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0]
-        with open(edgelist) as flines:
-            # edgelist is a list of lines of the form (node1 node2 weight)
-            edges = []
-            for line in flines:
-                node1, node2, weight = line.strip().split(" ")
-                edges.append([node1, node2, weight])
-        # Create the document to be stored
+    treefiles = glob.glob(
+        "/home/will/MainProject/Topology/contactnetworks/????/????.?.?.tree")
+    # edgelisttype = "residue"
+    doctype = "partition"
+    detectionmethod = "Infomap"
+    N = -1  # I don't know what Infomap N I used to generate this data
+    unassignedTreeFiles = []
+    for treefile in treefiles:
+        pdbref = os.path.basename(treefile)[:4]
+        print(pdbref)
+        scaling = float(os.path.basename(treefile)[5:-5])
+        # Get the objectID for the edgelist used in generating the partition
+        cursor = collection.find({
+            "doctype": "edgelist",
+            "pdbref": pdbref,
+            "scaling": scaling
+        })
+        if cursor.count() != 1:
+            unassignedTreeFiles.append(treefile)
+            continue
+        edgelistid = cursor[0]["_id"]
+        data = treeFileToNumpyArray(treefile)
         edgelistDocument = {
             "pdbref": pdbref,
             "doctype": doctype,
-            "edgelistype": edgelisttype,
-            "hydrogenstatus": hydrogenstatus,
-            "scaling": scaling,
+            "edgelistid": edgelistid,
+            "detectionmethod": detectionmethod,
+            "data": data.tolist(),
+            "N": N,
             "date": datetime.datetime.utcnow(),
-            "data": edges
         }
-        # Add the data to the "proteinnetworks" collection
         result = collection.insert_one(edgelistDocument)
-        print(result)
+        print(result.inserted_id)
