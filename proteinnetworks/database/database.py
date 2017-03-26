@@ -34,24 +34,23 @@ NB this might be too large for MongoDB to handle (>16MB)
 
 import pymongo
 from pymongo.errors import ConnectionFailure
-
-
-import glob
-import os
-import datetime
 import sys
 
 
-# Server is stored locally; if I can't find it in 1 second its not running.
-client = pymongo.MongoClient(serverSelectionTimeoutMS=1000)
-try:
-    # The ismaster command is cheap and does not require auth.
-    client.admin.command('ismaster')
-except ConnectionFailure:
-    print("Server not available:")
-    print("Log file stored in /var/log/mongod/mongod.log")
-    sys.exit(1)
+class Database:
+    """A wrapper around MongoDB."""
 
-db = client.proteinnetworks
-collection = db.proteinnetworks
-print(collection.count())
+    def __init__(self):
+        """Connect to MongoDB, and ensure that it's running."""
+        # Server is stored locally; if I can't find it in 1 second its not running.
+        self.client = pymongo.MongoClient(serverSelectionTimeoutMS=1000)
+        try:
+            # The ismaster command is cheap and does not require auth.
+            self.client.admin.command('ismaster')
+        except ConnectionFailure:
+            print("Server not available:")
+            print("Log file stored in /var/log/mongod/mongod.log")
+            sys.exit(1)
+
+        self.db = self.client.proteinnetworks
+        self.collection = self.db.proteinnetworks
