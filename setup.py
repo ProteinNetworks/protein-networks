@@ -1,11 +1,20 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
-setup(name='proteinnetworks',
-      version='0.1dev',
-      description='Network analysis tools for protein structure',
-      url='http://github.com/turingcompliant/protein-networks',
-      author='William Grant',
-      author_email='contact@wpg.io',
-      license='GPLv3',
-      packages=['proteinnetworks'],
-      zip_safe=False)
+with open("README.md") as flines:
+    readme = flines.read()
+
+with open("LICENSE") as flines:
+    license = flines.read()
+
+setup(
+    name='proteinnetworks',
+    version='0.1dev',
+    description='Network analysis tools for protein structure',
+    long_description=readme,
+    url='http://github.com/turingcompliant/protein-networks',
+    author='William Grant',
+    author_email='contact@wpg.io',
+    license=license,
+    setup_requires=['pytest_runner'],
+    tests_require=['pytest'],
+    packages=find_packages(exclude=('tests')))
