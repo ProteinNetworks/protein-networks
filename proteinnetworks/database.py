@@ -34,7 +34,7 @@ NB this might be too large for MongoDB to handle (>16MB)
 
 import pymongo
 from pymongo.errors import ConnectionFailure
-import sys
+# import sys
 
 
 class Database:
@@ -48,9 +48,16 @@ class Database:
             # The ismaster command is cheap and does not require auth.
             self.client.admin.command('ismaster')
         except ConnectionFailure:
-            print("Server not available:")
-            print("Log file stored in /var/log/mongod/mongod.log")
-            sys.exit(1)
+            # Propagate the exception back up to whoever called it
+            raise IOError
 
         self.db = self.client.proteinnetworks
         self.collection = self.db.proteinnetworks
+
+    def getEdgelist(pdbref, edgelisttype, hydrogenstatus, scaling):
+        """
+        Attempt to extract the edgelist matching the given parameter set.
+
+        Return None if the edgelist cannot be found.
+        """
+        return None
