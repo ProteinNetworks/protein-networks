@@ -54,10 +54,26 @@ class Database:
         self.db = self.client.proteinnetworks
         self.collection = self.db.proteinnetworks
 
-    def getEdgelist(pdbref, edgelisttype, hydrogenstatus, scaling):
+    def getEdgelist(self, pdbref, edgelisttype, hydrogenstatus, scaling):
         """
         Attempt to extract the edgelist matching the given parameter set.
 
         Return None if the edgelist cannot be found.
+
+        There should never be two documents with the same parameter combination (for now)
         """
-        return None
+        query = {
+            "pdbref": pdbref,
+            "doctype": "edgelist",
+            "edgelisttype": edgelisttype,
+            "hydrogenstatus": hydrogenstatus,
+            "scaling": scaling,
+        }
+        cursor = self.collection.find(query)
+        numresults = cursor.count()
+        if not numresults:
+            return
+        elif numresults == 1:
+            return cursor[0]
+        else:
+            raise IOError  # TODO Custom exception

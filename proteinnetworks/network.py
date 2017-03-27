@@ -31,4 +31,9 @@ class Network:
             print("Couldn't connect to server")
             sys.exit()
         # Attempt to extract the edgelist matching the given params
-        self.edgelist = database.getEdgelist(pdbref, edgelisttype, hydrogenstatus, scaling)
+        doc = database.getEdgelist(pdbref, edgelisttype, hydrogenstatus, scaling)
+        if doc:
+            self.edgelist = doc['data']
+            print("edgelist found")
+        else:
+            print("no edgelist fitting those parameters found: generating")
