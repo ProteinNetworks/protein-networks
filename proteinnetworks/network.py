@@ -27,23 +27,25 @@ class Network:
 
         # Try to connect to the database
         try:
-            database = Database()
+            self.database = Database()
             print("successfully connected")
         except IOError:
             print("Couldn't connect to server")
             sys.exit()
         # Attempt to extract the edgelist matching the given params
-        doc = database.extractEdgelist(pdbref, edgelisttype, hydrogenstatus,
-                                       scaling)
+        doc = self.database.extractEdgelist(pdbref, edgelisttype,
+                                            hydrogenstatus, scaling)
         if doc:
             self.edgelist = doc['data']
             print("edgelist found")
+            print(doc)
         else:
             print("no edgelist fitting those parameters found: generating")
             edgelist = self.generateEdgelist(pdbref, edgelisttype,
                                              hydrogenstatus, scaling)
-            database.depositEdgelist(pdbref, edgelisttype, hydrogenstatus,
-                                     scaling, edgelist)
+            self.edgelist = edgelist
+            self.database.depositEdgelist(pdbref, edgelisttype, hydrogenstatus,
+                                          scaling, edgelist)
 
     def generateEdgelist(self, pdbref, edgelisttype, hydrogenstatus, scaling):
         r"""
@@ -63,7 +65,9 @@ class Network:
 
         """
         edges = []
-        # if args.hydrogens:
+        assert hydrogenstatus == "noH"  # for now
+        # TODO HYDROGENSTATUS STUFF GOES HERE
+        # if hydrogenstatus :
         #     proc = subprocess.run(["haad", filename], stderr= subprocess.DEVNULL)
 
         # if proc.returncode == -11:
@@ -73,9 +77,9 @@ class Network:
         #     # been added and all non-ATOM files (and the element info) stripped out.
         #     filename = filename + ".h"
 
-        filename = "bla"
+        pdbdata = self.database.extractPDBFile(pdbref)
 
-        positions, elements, residues = self.extractAtomicData(filename)
+        positions, elements, residues = self.extractAtomicData(pdbdata)
         assert len(positions) == len(residues) == len(elements)
 
         # get matrix of square distances
@@ -120,9 +124,11 @@ class Network:
                 edges.append([i, j, weight])
             edges.sort()
 
-    def extractAtomicData(filename):
+        return edges
+
+    def extractAtomicData(self, pdbdata):
         """
-        Given a path to a filename, extract the atomic data.
+        Given a PDB file in the form of a list of lines, extract the atomic data.
 
         pull all ATOM records, and push the atomic positions, element, and
         residue number to three arrays.
@@ -130,22 +136,21 @@ class Network:
         positions = []
         elements = []
         residues = []
-        with open(filename, mode='r') as afile:
-            residueCounter = 0
-            prevRes = 0
-            for line in afile:
-                if line.strip() == "ENDMDL":
-                    break
-                linelist = line.rstrip()
-                if linelist[0:4] == "ATOM":
-                    residueNumber = int(linelist[22:26].strip())
-                    if residueNumber != prevRes:
-                        residueCounter += 1
-                    prevRes = residueNumber
-                    positions.append(
-                        [linelist[30:38], linelist[38:46], linelist[46:54]])
-                    # elements.append(linelist[76:78].strip())
-                    elements.append(linelist[13].strip())
-                    residues.append(residueCounter)
+        residueCounter = 0
+        prevRes = 0
+        for line in pdbdata:
+            if line.strip() == "ENDMDL":
+                break
+            linelist = line.rstrip()
+            if linelist[0:4] == "ATOM":
+                residueNumber = int(linelist[22:26].strip())
+                if residueNumber != prevRes:
+                    residueCounter += 1
+                prevRes = residueNumber
+                positions.append(
+                    [linelist[30:38], linelist[38:46], linelist[46:54]])
+                # elements.append(linelist[76:78].strip())
+                elements.append(linelist[13].strip())
+                residues.append(residueCounter)
         positions = np.asarray(positions, dtype=float)
         return positions, elements, residues
