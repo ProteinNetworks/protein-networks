@@ -79,7 +79,7 @@ class Network:
 
         pdbdata = self.database.extractPDBFile(pdbref)
 
-        positions, elements, residues = self.extractAtomicData(pdbdata)
+        positions, elements, residues = extractAtomicData(pdbdata)
         assert len(positions) == len(residues) == len(elements)
 
         # get matrix of square distances
@@ -126,31 +126,32 @@ class Network:
 
         return edges
 
-    def extractAtomicData(self, pdbdata):
-        """
-        Given a PDB file in the form of a list of lines, extract the atomic data.
 
-        pull all ATOM records, and push the atomic positions, element, and
-        residue number to three arrays.
-        """
-        positions = []
-        elements = []
-        residues = []
-        residueCounter = 0
-        prevRes = 0
-        for line in pdbdata:
-            if line.strip() == "ENDMDL":
-                break
-            linelist = line.rstrip()
-            if linelist[0:4] == "ATOM":
-                residueNumber = int(linelist[22:26].strip())
-                if residueNumber != prevRes:
-                    residueCounter += 1
-                prevRes = residueNumber
-                positions.append(
-                    [linelist[30:38], linelist[38:46], linelist[46:54]])
-                # elements.append(linelist[76:78].strip())
-                elements.append(linelist[13].strip())
-                residues.append(residueCounter)
-        positions = np.asarray(positions, dtype=float)
-        return positions, elements, residues
+def extractAtomicData(pdbdata):
+    """
+    Given a PDB file in the form of a list of lines, extract the atomic data.
+
+    pull all ATOM records, and push the atomic positions, element, and
+    residue number to three arrays.
+    """
+    positions = []
+    elements = []
+    residues = []
+    residueCounter = 0
+    prevRes = 0
+    for line in pdbdata:
+        if line.strip() == "ENDMDL":
+            break
+        linelist = line.rstrip()
+        if linelist[0:4] == "ATOM":
+            residueNumber = int(linelist[22:26].strip())
+            if residueNumber != prevRes:
+                residueCounter += 1
+            prevRes = residueNumber
+            positions.append(
+                [linelist[30:38], linelist[38:46], linelist[46:54]])
+            # elements.append(linelist[76:78].strip())
+            elements.append(linelist[13].strip())
+            residues.append(residueCounter)
+    positions = np.asarray(positions, dtype=float)
+    return positions, elements, residues
