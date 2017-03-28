@@ -26,7 +26,7 @@ if doctype == partition:
         data: A 2D numpy array giving the data
 
 if doctype == pdbfile:
-    data: The PDBfile itself
+    data: The PDBfile itself (sans headers) as an array of strings
 
 
 NB this might be too large for MongoDB to handle (>16MB)
@@ -119,22 +119,9 @@ class Database:
         add it to the database.
         """
         headers = [
-            "HEADER",
-            "OBSLTE",
-            "TITLE",
-            "SPLT",
-            "CAVEAT",
-            "COMPND",
-            "SOURCE",
-            "KEYWDS",
-            "EXPDTA",
-            "NUMMDL",
-            "MDLTYP",
-            "AUTHOR",
-            "REVDAT",
-            "SPRSDE",
-            "JRNL",
-            "REMARKS",
+            "HEADER", "OBSLTE", "TITLE", "SPLT", "CAVEAT", "COMPND", "SOURCE",
+            "KEYWDS", "EXPDTA", "NUMMDL", "MDLTYP", "AUTHOR", "REVDAT",
+            "SPRSDE", "JRNL", "REMARKS", "REMARK"
         ]
         query = {
             "pdbref": pdbref,
@@ -150,7 +137,24 @@ class Database:
             # Pull the PDB file from the Central Repo
             url = "http://www.rcsb.org/pdb/files/{}.pdb".format(pdbref)
 
-            print("Fetching {}.pdb...".format(pdbref))
+            print("PDB file not found, fetching {}.pdb...".format(pdbref))
             data = urllib.request.urlopen(url).readlines()
-            print(data)
-            # Strip out the headers.
+            pdbfile = []
+            for line in data:
+                line = line.decode().strip()
+                # Strip out the headers.
+                for header in headers:
+                    if line.startswith(header):
+                        break
+                else:
+                    pdbfile.append(line)
+
+            document = {
+                "pdbref": pdbref,
+                "doctype": "pdbfile",
+                "data": pdbfile,
+            }
+            print(
+                "adding to database... (but not until I've sorted uniqueness)")
+            # self.collection.insert_one(document)
+            return document['data']
