@@ -86,8 +86,7 @@ class Database:
                         edgelisttype,
                         hydrogenstatus,
                         scaling,
-                        edges,
-                        dryrun=True):
+                        edges):
         """Check that the given edgelist isn't already in the database, then deposit."""
         edgelist = {
             "pdbref": pdbref,
@@ -105,11 +104,8 @@ class Database:
         else:
             edgelist["date"] = datetime.datetime.utcnow()
             edgelist["data"] = edges
-            print("adding to database...")
-            if not dryrun:
-                self.collection.insert_one(edgelist)
-            else:
-                print("not really")
+            print("adding edgelist to database...")
+            self.collection.insert_one(edgelist)
 
     def extractPDBFile(self, pdbref):
         """
@@ -154,7 +150,6 @@ class Database:
                 "doctype": "pdbfile",
                 "data": pdbfile,
             }
-            print(
-                "adding to database... (but not until I've sorted uniqueness)")
-            # self.collection.insert_one(document)
-            return document['data']
+            print("adding PDB file to database...")
+            self.collection.insert_one(document)
+            return pdbfile
