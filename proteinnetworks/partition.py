@@ -52,11 +52,11 @@ class Partition:
         else:
             print("no partition fitting those parameters found: generating")
 
-            partition = self.generatePartition(pdbref, edgelistid,
-                                               detectionmethod, r, N)
-            self.partition = partition
-            # self.database.depositPartition(pdbref, edgelistid, detectionmethod,
-            #                               r, partition)
+            data = self.generatePartition(pdbref, edgelistid, detectionmethod,
+                                          r, N)
+            self.data = data
+            self.database.depositPartition(pdbref, edgelistid, detectionmethod,
+                                           r, N, data)
 
     def generatePartition(self, pdbref, edgelistid, detectionmethod, r, N):
         """Generate a community structure using the parameters supplied."""
@@ -68,7 +68,10 @@ class Partition:
         with open("temp.dat", mode='w') as flines:
             flines.write("\n".join(" ".join(map(str, x)) for x in edgelist))
         # Run Infomap on the edgelist
-        subprocess.run(["Infomap", "temp.dat", ".", "-i", "link-list", "--tree", "-N", str(N)])
+        subprocess.run([
+            "Infomap", "temp.dat", ".", "-i", "link-list", "--tree", "-N",
+            str(N)
+        ])
         partition = treeFileToNestedLists("temp.tree")
         # Remove temporary files
         os.remove("temp.dat")

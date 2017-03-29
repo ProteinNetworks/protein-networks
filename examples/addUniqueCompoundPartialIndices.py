@@ -22,7 +22,7 @@ if __name__ == "__main__":
     db = client.proteinnetworks
     collection = db.proteinnetworks
 
-    # collection.drop_indexes()
+    collection.drop_indexes()
     # print(collection.find({"doctype": "pdbfile"}).count())
     collection.create_index(
         "pdbref", unique=True, partialFilterExpression={"doctype": "pdbfile"})

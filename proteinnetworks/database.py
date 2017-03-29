@@ -195,3 +195,39 @@ class Database:
     def extractDocumentGivenId(self, edgelistid):
         """Return a document given an id. Return None if not found."""
         return self.collection.find_one({"_id": ObjectId(edgelistid)})
+
+    def depositPartition(self, pdbref, edgelistid, detectionmethod, r, N, data):
+        """
+        Deposit partition into the database.
+
+        Check that the given partition isn't already in the database,
+        then deposit and return the _id.
+        """
+        partition = {
+            "pdbref": pdbref,
+            "doctype": "partition",
+            "detectionmethod": detectionmethod,
+            "edgelistid": edgelistid,
+        }
+        if r != -1:
+            partition['r'] = r
+        if N != -1:
+            partition['N'] = N
+        cursor = self.collection.find(partition)
+        numresults = cursor.count()
+        if numresults:
+            print(
+                "Partition already exists in the database! Something has gone terribly wrong!"
+            )
+        else:
+            partition["date"] = datetime.datetime.utcnow()
+            partition["data"] = data
+            print("adding partition to database...")
+
+            print(partition)
+            result = self.collection.insert_one(partition)
+            return result.inserted_id
+
+    def getNumberOfDocuments(self):
+        """Return the total number of documents in the collection."""
+        return self.collection.count()

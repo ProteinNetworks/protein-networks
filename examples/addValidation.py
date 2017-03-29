@@ -63,7 +63,7 @@ if __name__ == "__main__":
                 "$and": [{
                     "doctype": "partition"
                 }, {
-                    "edgelist": {
+                    "edgelistid": {
                         "$type": "objectId"
                     }
                 }, {
@@ -74,7 +74,8 @@ if __name__ == "__main__":
                             "r": {
                                 "$type": "number"
                             }
-                        }],
+                        }]
+                    }, {
                         "detectionmethod": "Infomap"
                     }]
                 }]
