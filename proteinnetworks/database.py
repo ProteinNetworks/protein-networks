@@ -34,6 +34,7 @@ NB this might be too large for MongoDB to handle (>16MB)
 
 import pymongo
 from pymongo.errors import ConnectionFailure
+from bson.objectid import ObjectId
 import datetime
 import urllib.request
 
@@ -81,13 +82,14 @@ class Database:
         else:
             raise IOError  # TODO Custom exception
 
-    def depositEdgelist(self,
-                        pdbref,
-                        edgelisttype,
-                        hydrogenstatus,
-                        scaling,
+    def depositEdgelist(self, pdbref, edgelisttype, hydrogenstatus, scaling,
                         edges):
-        """Check that the given edgelist isn't already in the database, then deposit."""
+        """
+        Deposit edgelist into the database.
+
+        Check that the given edgelist isn't already in the database,
+        then deposit and return the _id.
+        """
         edgelist = {
             "pdbref": pdbref,
             "doctype": "edgelist",
@@ -105,7 +107,8 @@ class Database:
             edgelist["date"] = datetime.datetime.utcnow()
             edgelist["data"] = edges
             print("adding edgelist to database...")
-            self.collection.insert_one(edgelist)
+            result = self.collection.insert_one(edgelist)
+            return result.inserted_id
 
     def extractPDBFile(self, pdbref):
         """
@@ -153,3 +156,39 @@ class Database:
             print("adding PDB file to database...")
             self.collection.insert_one(document)
             return pdbfile
+
+    def extractPartition(self, pdbref, edgelistid, detectionmethod, r):
+        """
+        Validate the parameter set and attempt to extract the partition.
+
+        Return None if the parameters are valid, but the partition isn't found.
+        """
+        # Check that the edgelistid maps to a database entry
+        numberOfEdgelists = self.collection.find({
+            "_id": ObjectId(edgelistid),
+            "doctype": "edgelist"
+        }).count()
+
+        if numberOfEdgelists:
+            query = {
+                "pdbref": pdbref,
+                "doctype": "partition",
+                "edgelistid": edgelistid,
+                "detectionmethod": detectionmethod
+            }
+            if r != -1:
+                query['r'] = r
+            cursor = self.collection.find(query)
+            numresults = cursor.count()
+            if not numresults:
+                return
+            elif numresults == 1:
+                return cursor[0]
+            else:
+                raise IOError  # TODO Custom exception
+        else:
+            print("No edgelist found with the given id")
+
+    def extractDocumentGivenId(self, edgelistid):
+        """Return a document given an id. Return None if not found."""
+        return self.collection.find_one({"_id": ObjectId(edgelistid)})

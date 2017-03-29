@@ -37,15 +37,15 @@ class Network:
                                             hydrogenstatus, scaling)
         if doc:
             self.edgelist = doc['data']
+            self.edgelistid = doc['_id']
             print("edgelist found")
-            print(doc)
         else:
             print("no edgelist fitting those parameters found: generating")
             edgelist = self.generateEdgelist(pdbref, edgelisttype,
                                              hydrogenstatus, scaling)
             self.edgelist = edgelist
-            self.database.depositEdgelist(pdbref, edgelisttype, hydrogenstatus,
-                                          scaling, edgelist)
+            self.edgelistid = self.database.depositEdgelist(
+                pdbref, edgelisttype, hydrogenstatus, scaling, edgelist)
 
     def generateEdgelist(self, pdbref, edgelisttype, hydrogenstatus, scaling):
         r"""
