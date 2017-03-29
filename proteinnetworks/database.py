@@ -24,6 +24,7 @@ if doctype == partition:
 
     if detectionmethod == Infomap:
         data: A 2D numpy array giving the data
+        N : the number of iterations of Infomap run
 
 if doctype == pdbfile:
     data: The PDBfile itself (sans headers) as an array of strings
@@ -157,7 +158,7 @@ class Database:
             self.collection.insert_one(document)
             return pdbfile
 
-    def extractPartition(self, pdbref, edgelistid, detectionmethod, r):
+    def extractPartition(self, pdbref, edgelistid, detectionmethod, r, N):
         """
         Validate the parameter set and attempt to extract the partition.
 
@@ -178,6 +179,8 @@ class Database:
             }
             if r != -1:
                 query['r'] = r
+            if N != -1:
+                query['N'] = N
             cursor = self.collection.find(query)
             numresults = cursor.count()
             if not numresults:
