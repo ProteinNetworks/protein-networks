@@ -45,13 +45,11 @@ import urllib.request
 class Database:
     """A wrapper around MongoDB."""
 
-    def __init__(self, test=False):
+    def __init__(self, password=""):
         """Connect to MongoDB, and ensure that it's running."""
         # Server is stored locally; if I can't find it in 1 second its not running.
-        if not test:
+        if not password:
             password = input("password: ").strip()
-        else:
-            password = ""
         self.client = pymongo.MongoClient(
             "mongodb://writeAccess:" + password + "@127.0.0.1/proteinnetworks",
             serverSelectionTimeoutMS=1000)
@@ -226,6 +224,7 @@ class Database:
             print(
                 "Partition already exists in the database! Something has gone terribly wrong!"
             )
+            raise IOError
         else:
             partition["date"] = datetime.datetime.utcnow()
             partition["data"] = data

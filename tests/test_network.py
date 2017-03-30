@@ -12,7 +12,7 @@ import proteinnetworks.network
 import proteinnetworks.database
 
 
-def test_init(mock_database):
+def test_network_init(mock_database):
     """Test the __init__() function in the network.py module.
 
     Inputs: pdbref, edgelisttype, hydrogenstatus, scaling
@@ -24,7 +24,7 @@ def test_init(mock_database):
         - database
         - edgelist
     """
-    db = proteinnetworks.database.Database(test=True)
+    db = proteinnetworks.database.Database(password="bla")
     inputArgs = {
         "scaling": 4.5,
         "edgelisttype": "residue",
