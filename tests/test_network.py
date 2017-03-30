@@ -9,6 +9,7 @@ generateEdgelist
  extractAtomicData(self, pdbdata):
 """
 import proteinnetworks.network
+import proteinnetworks.database
 
 
 def test_init(mock_database):
@@ -23,11 +24,13 @@ def test_init(mock_database):
         - database
         - edgelist
     """
+    db = proteinnetworks.database.Database(test=True)
     inputArgs = {
         "scaling": 4.5,
         "edgelisttype": "residue",
         "hydrogenstatus": "noH",
-        "pdbref": "1ubq"
+        "pdbref": "1ubq",
+        "database": db
     }
     pn = proteinnetworks.network.Network(**inputArgs)
     assert pn

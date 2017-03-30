@@ -9,7 +9,7 @@ def mock_database(monkeypatch):
         """The mock MongoClient. Does nothing, simply returns."""
 
         @classmethod
-        def __init__(self, serverSelectionTimeoutMS):
+        def __init__(self, inputString, serverSelectionTimeoutMS):
             pass
 
         class admin:
