@@ -192,9 +192,9 @@ class Database:
         else:
             print("No edgelist found with the given id")
 
-    def extractDocumentGivenId(self, edgelistid):
+    def extractDocumentGivenId(self, documentid):
         """Return a document given an id. Return None if not found."""
-        return self.collection.find_one({"_id": ObjectId(edgelistid)})
+        return self.collection.find_one({"_id": ObjectId(documentid)})
 
     def depositPartition(self, pdbref, edgelistid, detectionmethod, r, N, data):
         """

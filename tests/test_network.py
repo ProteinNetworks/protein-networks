@@ -5,27 +5,29 @@ Units to be tested:
 
 __init__.
     note that this includes Database __init__ (is perhaps a sign that the class design is iffy)
-
 generateEdgelist
-
-
-def extractAtomicData(self, pdbdata):
+ extractAtomicData(self, pdbdata):
 """
-import proteinnetworks.network
-# import pytest
+# import proteinnetworks.network
 
 
-# This will be run for every function: we replace the actual database with a dict
-# @pytest.fixture(autouse=True)
-# def mock_database(monkeypatch):
-#     monkeypatch.delattr("requests.sessions.Session.request")
+def test_init(mock_database):
+    """Test the __init__() function in the network.py module.
 
-
-def test_extractAtomicData(monkeypatch):
-    """Test the extractAtomicData() function in the network.py module.
-
-    Function extractAtomicData reads in pdbdata in the form of a list of strings.
-    Outputs positions, elements, residues. Should test:
+    Inputs: pdbref, edgelisttype, hydrogenstatus, scaling
+    Output: a Network() class with members:
+        - scaling
+        - edgelisttype
+        - hydrogenstatus
+        - pdbref
+        - database
+        - edgelist
     """
-    pdbdata = ["ATOM bla bla bla"]
-    pos, elem, res = proteinnetworks.network.extractAtomicData(pdbdata)
+    # inputArgs = {
+    #     "scaling": 4.5,
+    #     "edgelisttype": "residue",
+    #     "hydrogenstatus": "noH",
+    #     "pdbref": "1ubq"
+    # }
+    # pn = proteinnetworks.network.Network(**inputArgs)
+    assert 1 == 1

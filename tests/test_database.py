@@ -1,6 +1,22 @@
-"""Unit tests for the Database class."""
+"""
+Unit tests for the Database class.
+
+Functions:
+__init__
+extractEdgelist
+depositEdgelist
+extractPDBFile
+extractPartition
+extractDocumentGivenId
+depositPartition
+getNumberOfDocuments
+"""
 
 
-def test_initialise():
+import proteinnetworks.database
+
+
+def test_initialise(mock_database):
     """meta-test, to check that pytest and Travis are behaving."""
-    assert 1 == 1
+    db = proteinnetworks.database.Database()
+    assert db

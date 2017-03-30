@@ -24,7 +24,6 @@ class Network:
         self.edgelisttype = edgelisttype
         self.hydrogenstatus = hydrogenstatus
         self.pdbref = pdbref
-
         # Try to connect to the database
         try:
             self.database = Database()
