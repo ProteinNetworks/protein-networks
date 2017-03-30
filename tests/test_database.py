@@ -8,7 +8,7 @@ depositEdgelist
 extractPDBFile
 extractPartition
 extractDocumentGivenId
-depositPartition
+depositPartition o
 getNumberOfDocuments x
 """
 
@@ -45,10 +45,10 @@ Function inputs: pdbref, edgelistid, detectionmethod, r, N, data.
 Function outputs: _id
 
 What is the expected behaviour:
-    - When all the arguments are correct?
+    - When all the arguments are correct? x
     - When the arguments are correct but the partition already
-        exists in the database?
-    - When the arguments don't make sense?
+        exists in the database? x
+    - When the arguments don't make sense? (Lots of options for this)
 """
 
 
@@ -93,3 +93,24 @@ def test_database_depositpartition_doc_already_present(mock_database):
     }
     with pytest.raises(IOError):
         db.depositPartition(**depositionArgs)
+
+
+"""
+Test the extractDocumentGivenId function
+input - an ObjectId
+output - a document
+
+Tests:
+        - Does it return the right thing given a correct id?
+        - Does it fail sensibly given an incorrect id?
+        - Does it fail sensibly given a super-incorrect id?
+
+Again, a lightweight wrapper around a mocked method, so can't test too hard.
+"""
+
+
+def test_database_extractdocumentgivenid_normal(mock_database):
+    """Assert that the database returns the right document given an id."""
+    db = proteinnetworks.database.Database(password="bla")
+    doc = db.extractDocumentGivenId("58dbe03fef677d54224a01d9")
+    assert doc

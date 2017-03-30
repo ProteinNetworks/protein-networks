@@ -917,4 +917,11 @@ def mock_database(monkeypatch):
                             def __init__(self):
                                 self.inserted_id = ObjectId("58dbe045ef677d54224a01d2")
                         return Result()
+
+                def find_one(_id):
+                    """Return the document matching the given _id."""
+                    for datum in data:
+                        if datum['_id'] == _id:
+                            return datum
+
     monkeypatch.setattr("pymongo.MongoClient", Garry)
