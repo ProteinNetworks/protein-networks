@@ -10,7 +10,7 @@ from .atomicradii import atomicRadii
 class Network:
     """Holds a edgelist and its parameters, and offers network inspection methods."""
 
-    def __init__(self, pdbref, edgelisttype, hydrogenstatus, scaling):
+    def __init__(self, pdbref, edgelisttype, hydrogenstatus, scaling, database=None):
         """
         Initialise the edgelist with a given parameter set.
 
@@ -25,12 +25,15 @@ class Network:
         self.hydrogenstatus = hydrogenstatus
         self.pdbref = pdbref
         # Try to connect to the database
-        try:
-            self.database = Database()
-            print("successfully connected")
-        except IOError:
-            print("Couldn't connect to server")
-            sys.exit()
+        if database:
+            self.database = database
+        else:
+            try:
+                self.database = Database()
+                print("successfully connected")
+            except IOError:
+                print("Couldn't connect to server")
+                sys.exit()
         # Attempt to extract the edgelist matching the given params
         doc = self.database.extractEdgelist(pdbref, edgelisttype,
                                             hydrogenstatus, scaling)

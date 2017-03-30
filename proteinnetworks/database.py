@@ -48,7 +48,10 @@ class Database:
     def __init__(self):
         """Connect to MongoDB, and ensure that it's running."""
         # Server is stored locally; if I can't find it in 1 second its not running.
-        self.client = pymongo.MongoClient(serverSelectionTimeoutMS=1000)
+        password = input("password: ").strip()
+        self.client = pymongo.MongoClient(
+            "mongodb://writeAccess:" + password + "@127.0.0.1/proteinnetworks",
+            serverSelectionTimeoutMS=1000)
         try:
             # The ismaster command is cheap and does not require auth.
             self.client.admin.command('ismaster')
@@ -196,7 +199,8 @@ class Database:
         """Return a document given an id. Return None if not found."""
         return self.collection.find_one({"_id": ObjectId(documentid)})
 
-    def depositPartition(self, pdbref, edgelistid, detectionmethod, r, N, data):
+    def depositPartition(self, pdbref, edgelistid, detectionmethod, r, N,
+                         data):
         """
         Deposit partition into the database.
 
