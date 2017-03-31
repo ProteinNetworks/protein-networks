@@ -580,7 +580,7 @@ def test_database_fetchpdbfilefromweb_success(mock_database, mock_urlopen):
     db = proteinnetworks.database.Database(password="bla")
     pdbref = "3rty"
     pdbfile = db.fetchPDBFileFromWeb(pdbref)
-    assert len(pdbfile) == 2
+    assert len(pdbfile) == 11
 
 
 def test_database_fetchpdbfilefromweb_error(mock_database, mock_urlopen):

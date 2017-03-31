@@ -332,6 +332,17 @@ def mock_urlopen(monkeypatch):
             pass
 
         def readlines(self):
-            return([b"ATOM 1 2 3", b"HETATM 1 2 3", b"HEADER 1 2 3"])
+            pdbdata = [b'ATOM      1  N   MET A   1      27.340  24.430   2.614  1.00  9.67           N',
+                       b'ATOM      3  C   MET A   1      26.913  26.639   3.531  1.00  9.62           C',
+                       b'ATOM      2  CA  MET A   1      26.266  25.413   2.842  1.00 10.38           C',
+                       b'ATOM      4  O   MET A   1      27.886  26.463   4.263  1.00  9.62           O',
+                       b'ATOM      5  CB  MET A   1      25.112  24.880   3.649  1.00 13.77           C',
+                       b'ATOM      6  CG  MET A   1      25.353  24.860   5.134  1.00 16.29           C',
+                       b'ATOM      7  SD  MET A   1      23.930  23.959   5.904  1.00 17.17           S',
+                       b'ATOM      8  CE  MET A   1      24.447  23.984   7.620  1.00 16.11           C',
+                       b'ATOM      9  N   GLN A   2      26.335  27.770   3.258  1.00  9.27           N',
+                       b'ATOM     10  CA  GLN A   2      26.850  29.021   3.898  1.00  9.07           C',
+                       b'ATOM     11  C   GLN A   2      26.100  29.253   5.202  1.00  8.72           C']
+            return pdbdata
 
     monkeypatch.setattr("urllib.request.urlopen", mockurlopen)
