@@ -80,7 +80,8 @@ class Network:
         #     filename = filename + ".h"
 
         pdbdata = self.database.extractPDBFile(pdbref)
-
+        if not pdbdata:
+            pdbdata = self.database.fetchPDBFileFromWeb(pdbref)
         positions, elements, residues = extractAtomicData(pdbdata)
         assert len(positions) == len(residues) == len(elements)
 

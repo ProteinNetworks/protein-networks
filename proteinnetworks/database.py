@@ -34,7 +34,7 @@ NB this might be too large for MongoDB to handle (>16MB)
 """
 
 import pymongo
-from pymongo.errors import ConnectionFailure
+from pymongo.errors import ConnectionFailure, DuplicateKeyError
 from bson.errors import InvalidId
 from bson.objectid import ObjectId
 import datetime
@@ -79,6 +79,8 @@ class Database:
             "hydrogenstatus": hydrogenstatus,
             "scaling": scaling,
         }
+
+        self.validateEdgelist(query, excludeData=True)
         cursor = self.collection.find(query)
         numresults = cursor.count()
         if not numresults:
@@ -106,28 +108,29 @@ class Database:
         cursor = self.collection.find(edgelist)
         numresults = cursor.count()
         if numresults:
-            print(
+            raise IOError(
                 "Edgelist already exists in the database! Something has gone terribly wrong!"
             )
         else:
             edgelist["date"] = datetime.datetime.utcnow()
             edgelist["data"] = edges
+
+            self.validateEdgelist(edgelist)
+
             print("adding edgelist to database...")
             result = self.collection.insert_one(edgelist)
             return result.inserted_id
 
     def extractPDBFile(self, pdbref):
         """
-        Pull the PDB file corresponding to the given PDB ref, if it exists.
+        Validate the PDB reference and attempt to extract the PDB file corresponding to the PDB ref.
 
-        If it doesn't exist, pull it from the web, strip out the headers, and
-        add it to the database.
+        return None if the PDB reference cannot be found.
+        throw an IOError if the PDB reference is invalid
         """
-        headers = [
-            "HEADER", "OBSLTE", "TITLE", "SPLT", "CAVEAT", "COMPND", "SOURCE",
-            "KEYWDS", "EXPDTA", "NUMMDL", "MDLTYP", "AUTHOR", "REVDAT",
-            "SPRSDE", "JRNL", "REMARKS", "REMARK"
-        ]
+        if not (type(pdbref) == str and len(pdbref) == 4):
+            raise IOError("Malformed PDB reference:", pdbref)
+
         query = {
             "pdbref": pdbref,
             "doctype": "pdbfile",
@@ -138,30 +141,46 @@ class Database:
             raise IOError("More than one PDB file found")
         elif numresults == 1:
             return cursor[0]['data']
-        else:
-            # Pull the PDB file from the Central Repo
-            url = "http://www.rcsb.org/pdb/files/{}.pdb".format(pdbref)
 
-            print("PDB file not found, fetching {}.pdb...".format(pdbref))
-            data = urllib.request.urlopen(url).readlines()
-            pdbfile = []
-            for line in data:
-                line = line.decode().strip()
-                # Strip out the headers.
-                for header in headers:
-                    if line.startswith(header):
-                        break
-                else:
-                    pdbfile.append(line)
+    def fetchPDBFileFromWeb(self, pdbref):
+        """
+        Pull the PDB file from the web, deposit, and return.
 
-            document = {
-                "pdbref": pdbref,
-                "doctype": "pdbfile",
-                "data": pdbfile,
-            }
-            print("adding PDB file to database...")
+        Fetched from the RCSB, and the headers stripped to save disk space
+        """
+        # Validate the pdbref
+        if not (type(pdbref) == str and len(pdbref) == 4):
+            raise IOError("Malformed PDB reference:", pdbref)
+
+        # Pull the PDB file from the Central Repo
+        headers = [
+            "HEADER", "OBSLTE", "TITLE", "SPLT", "CAVEAT", "COMPND", "SOURCE",
+            "KEYWDS", "EXPDTA", "NUMMDL", "MDLTYP", "AUTHOR", "REVDAT",
+            "SPRSDE", "JRNL", "REMARKS", "REMARK"
+        ]
+        url = "http://www.rcsb.org/pdb/files/{}.pdb".format(pdbref)
+        data = urllib.request.urlopen(url).readlines()
+        pdbfile = []
+        for line in data:
+            line = line.decode().strip()
+            # Strip out the headers.
+            for header in headers:
+                if line.startswith(header):
+                    break
+            else:
+                pdbfile.append(line)
+
+        document = {
+            "pdbref": pdbref,
+            "doctype": "pdbfile",
+            "data": pdbfile,
+        }
+        print("adding PDB file to database...")
+        try:
             self.collection.insert_one(document)
-            return pdbfile
+        except DuplicateKeyError:
+            raise IOError("PDB file already in the database")
+        return pdbfile
 
     def extractPartition(self, pdbref, edgelistid, detectionmethod, r, N):
         """
@@ -170,10 +189,13 @@ class Database:
         Return None if the parameters are valid, but the partition isn't found.
         """
         # Check that the edgelistid maps to a database entry
-        numberOfEdgelists = self.collection.find({
-            "_id": ObjectId(edgelistid),
-            "doctype": "edgelist"
-        }).count()
+        try:
+            numberOfEdgelists = self.collection.find({
+                "_id": ObjectId(edgelistid),
+                "doctype": "edgelist"
+            }).count()
+        except InvalidId:
+            raise IOError("edgelistid not valid:", edgelistid)
 
         if numberOfEdgelists:
             query = {
@@ -186,6 +208,9 @@ class Database:
                 query['r'] = r
             if N != -1:
                 query['N'] = N
+
+            self.validatePartition(query, excludeData=True)
+
             cursor = self.collection.find(query)
             numresults = cursor.count()
             if not numresults:
@@ -241,7 +266,7 @@ class Database:
             result = self.collection.insert_one(partition)
             return result.inserted_id
 
-    def validatePartition(self, partition):
+    def validatePartition(self, partition, excludeData=False):
         """
         Test that the proposed partition has the correct arguments.
 
@@ -276,22 +301,66 @@ class Database:
         elif type(partition['N']) != int:
             raise IOError("N must be of type 'int'")
         # Validate the partition itself (array of integers without gaps.)
-        if type(partition['data']) != list:
-            raise IOError('partition must be a list')
-        else:
-            for item in partition['data']:
-                if type(item) != int and type(item) != list:
-                    raise IOError(
-                        'partition must be a list of ints (perhaps nested, not',
-                        type(item))
-            numcoms = len(set(partition['data']))
-            try:
-                for i in range(numcoms):
-                    # Check there is at least one item in the list for all coms.
-                    partition['data'].index(i + 1)
-            except ValueError:
-                raise IOError('partition invalid: gaps found in labelling')
+        if not excludeData:
+            if type(partition['data']) != list:
+                raise IOError('partition must be a list')
+            else:
+                for item in partition['data']:
+                    if type(item) != int and type(item) != list:
+                        raise IOError(
+                            'partition must be a list of ints (perhaps nested, not',
+                            type(item))
+                numcoms = len(set(partition['data']))
+                try:
+                    for i in range(numcoms):
+                        # Check there is at least one item in the list for all coms.
+                        partition['data'].index(i + 1)
+                except ValueError:
+                    raise IOError('partition invalid: gaps found in labelling')
 
     def getNumberOfDocuments(self):
         """Return the total number of documents in the collection."""
         return self.collection.count()
+
+    def validateEdgelist(self, edgelist, excludeData=False):
+        """
+        Test that "edgelist" has correct field: value formatting.
+
+        Throw an IOError if any field is found to be invalid.
+        """
+        pass
+        # Validate PDB reference
+        if type(edgelist['pdbref']) != str or len(edgelist['pdbref']) != 4:
+            raise IOError("PDB reference malformed: ", edgelist['pdbref'])
+        # Validate edgelisttype
+        if (edgelist['edgelisttype'] != "atomic" and
+                edgelist['edgelisttype'] != "residue"):
+            raise IOError("edgelisttype must be either 'atomic' or 'residue'")
+        # Validate hydrogenstatus
+        if (edgelist['hydrogenstatus'] != "noH" and
+                edgelist['hydrogenstatus'] != "Hatoms" and
+                edgelist['hydrogenstatus'] != "Hbonds"):
+            raise IOError("hydrogenstatus must be either 'noH', 'Hatoms' or 'Hbonds'")
+        # Validate scaling:
+        if type(edgelist['scaling']) != float or edgelist['scaling'] < 0.0:
+            raise IOError("scaling must be a non-negative float")
+        """
+        Validate edges:
+        Array correct shape, correct indexing, no self-loops.
+        """
+        if not excludeData:
+            edges = edgelist['data']
+            smallestNode = 1000
+            for edge in edges:
+
+                if len(edge) != 3:
+                    raise IOError("Edgelist has the wrong shape")
+                if type(edge[0]) != int or type(edge[1]) != int:
+                    raise IOError("Nodes should be integers")
+                minNode = min(edge[0], edge[1])
+                if minNode < smallestNode:
+                    smallestNode = minNode
+                if edge[0] == edge[1]:
+                    raise IOError("No self-loops permitted")
+            if smallestNode != 1:
+                raise IOError("Node labelling should start at 1")
