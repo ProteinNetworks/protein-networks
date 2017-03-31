@@ -36,7 +36,7 @@ def test_database_getnumberofdocuments(mock_database):
     to test.
     """
     db = proteinnetworks.database.Database(password="bla")
-    assert db.getNumberOfDocuments() == 3
+    assert db.getNumberOfDocuments() == 4
 
 """
 Test the depositPartition function.
@@ -58,10 +58,10 @@ def test_database_depositpartition_success(mock_database):
 
     depositionArgs = {
         "pdbref": "1ubq",
-        "edgelistid": ObjectId("58dbe045ef677d54224a01da"),
+        "edgelistid": ObjectId("58dbe03fef677d54224a01da"),
         "detectionmethod": "Infomap",
         "r": -1,
-        "N": 10,
+        "N": 5,
         "data": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     }
     resultId = db.depositPartition(**depositionArgs)
@@ -95,6 +95,176 @@ def test_database_depositpartition_doc_already_present(mock_database):
         db.depositPartition(**depositionArgs)
 
 
+def test_database_depositpartition_malformed_pdb(mock_database):
+    """Assert that depositPartition handles bad PDB references correctly."""
+    db = proteinnetworks.database.Database(password="bla")
+
+    depositionArgs = {
+        'pdbref': "blablabla",
+        'data': [1, 2, 3],
+        'N': 10,
+        'edgelistid': ObjectId('58dcf13fef677d54224a01da'),
+        'detectionmethod': 'Infomap',
+        'r': -1
+    }
+    with pytest.raises(IOError):
+        db.depositPartition(**depositionArgs)
+
+
+def test_database_depositpartition_edgelistid_invalid(mock_database):
+    """Assert that an malformed ObjectId is rejected correctly."""
+    db = proteinnetworks.database.Database(password="bla")
+
+    depositionArgs = {
+        'pdbref': "1ubq",
+        'data': [1, 2, 3],
+        'N': 10,
+        'edgelistid': 'bla',
+        'detectionmethod': 'Infomap',
+        'r': -1
+    }
+    with pytest.raises(IOError):
+        db.depositPartition(**depositionArgs)
+
+
+def test_database_depositpartition_edgelistid_incorrect(mock_database):
+    """
+    Test valid, but incorrect ObjectIDs.
+
+    Assert that if the ObjectId doesn't correspond to an edgelist
+    with the same PDB reference as the partition, the system throws an exception.
+    """
+    db = proteinnetworks.database.Database(password="bla")
+
+    depositionArgs = {
+        'pdbref': "1ubq",
+        'data': [1, 2, 3],
+        'N': 10,
+        'edgelistid': ObjectId('58dcf13fef677d54224a01da'),
+        'detectionmethod': 'Infomap',
+        'r': -1
+    }
+    with pytest.raises(IOError):
+        db.depositPartition(**depositionArgs)
+
+
+def test_database_depositpartition_detectionmethod_invalid(mock_database):
+    """Assert that if "detectionmethod" isn't "AFG" or "Infomap" then an exception is raised."""
+    db = proteinnetworks.database.Database(password="bla")
+
+    depositionArgs = {
+        'pdbref': "2vcr",
+        'data': [1, 2, 3],
+        'N': 10,
+        'edgelistid': ObjectId('58dcf13fef677d54224a01da'),
+        'detectionmethod': 'bla',
+        'r': -1
+    }
+    with pytest.raises(IOError):
+        db.depositPartition(**depositionArgs)
+
+
+def test_database_depositpartition_r_invalid(mock_database):
+    """Test that invalid r values (aka not a float) are treated properly."""
+    db = proteinnetworks.database.Database(password="bla")
+
+    depositionArgs = {
+        'pdbref': "2vcr",
+        'data': [1, 2, 3],
+        'N': -1,
+        'edgelistid': ObjectId('58dcf13fef677d54224a01da'),
+        'detectionmethod': 'Infomap',
+        'r': "ten"
+    }
+    with pytest.raises(IOError):
+        db.depositPartition(**depositionArgs)
+
+
+def test_database_depositpartition_N_invalid(mock_database):
+    """Test that invalid N values (aka not an integer) are treated properly."""
+    db = proteinnetworks.database.Database(password="bla")
+
+    depositionArgs = {
+        'pdbref': "2vcr",
+        'data': [1, 2, 3],
+        'N': "five",
+        'edgelistid': ObjectId('58dcf13fef677d54224a01da'),
+        'detectionmethod': 'Infomap',
+        'r': -1
+    }
+    with pytest.raises(IOError):
+        db.depositPartition(**depositionArgs)
+
+
+def test_database_depositpartition_r_and_N_not_both_missing(mock_database):
+    """Test that if r and N are simultaneously -1 an error is raised."""
+    db = proteinnetworks.database.Database(password="bla")
+
+    depositionArgs = {
+        'pdbref': "2vcr",
+        'data': [1, 2, 3],
+        'N': -1,
+        'edgelistid': ObjectId('58dcf13fef677d54224a01da'),
+        'detectionmethod': 'Infomap',
+        'r': -1
+    }
+    with pytest.raises(IOError):
+        db.depositPartition(**depositionArgs)
+
+
+def test_database_depositpartition_r_and_N_not_both_present(mock_database):
+    """Test that if r and N are simultaneously not -1 an error is raised."""
+    db = proteinnetworks.database.Database(password="bla")
+
+    depositionArgs = {
+        'pdbref': "2vcr",
+        'data': [1, 2, 3],
+        'N': 10,
+        'edgelistid': ObjectId('58dcf13fef677d54224a01da'),
+        'detectionmethod': 'Infomap',
+        'r': 1.5
+    }
+    with pytest.raises(IOError):
+        db.depositPartition(**depositionArgs)
+
+
+def test_database_depositpartition_data_invalid(mock_database):
+    """Test that if the partition isn't an array of ints, an error is raised."""
+    db = proteinnetworks.database.Database(password="bla")
+
+    depositionArgs = {
+        'pdbref': "2vcr",
+        'data': "bla",
+        'N': 10,
+        'edgelistid': ObjectId('58dcf13fef677d54224a01da'),
+        'detectionmethod': 'Infomap',
+        'r': -1
+    }
+    with pytest.raises(IOError):
+        db.depositPartition(**depositionArgs)
+
+
+def test_database_depositpartition_data_incorrect(mock_database):
+    """
+    Test that the system rejects incorrect partitions.
+
+    Partitions should have at least one value in 1,...,M where M is the
+    number of unique communities.
+    """
+    db = proteinnetworks.database.Database(password="bla")
+
+    depositionArgs = {
+        'pdbref': "2vcr",
+        'data': [1, 1, 3, 4],
+        'N': 10,
+        'edgelistid': ObjectId('58dcf13fef677d54224a01da'),
+        'detectionmethod': 'Infomap',
+        'r': -1
+    }
+    with pytest.raises(IOError):
+        db.depositPartition(**depositionArgs)
+
+
 """
 Test the extractDocumentGivenId function
 input - an ObjectId
@@ -102,7 +272,7 @@ output - a document
 
 Tests:
         - Does it return the right thing given a correct id?
-        - Does it fail sensibly given an incorrect id?
+        - Does it fail sensibly given an incorrect id? (i.e one that doesn't exist in the database)
         - Does it fail sensibly given a super-incorrect id?
 
 Again, a lightweight wrapper around a mocked method, so can't test too hard.
@@ -114,3 +284,17 @@ def test_database_extractdocumentgivenid_normal(mock_database):
     db = proteinnetworks.database.Database(password="bla")
     doc = db.extractDocumentGivenId("58dbe03fef677d54224a01d9")
     assert doc
+
+
+def test_database_extractdocumentgivenid_missing(mock_database):
+    """Assert that the database returns None if the document to be found is missing."""
+    db = proteinnetworks.database.Database(password="bla")
+    doc = db.extractDocumentGivenId("58dbe03fef677d54224a01d7")
+    assert not doc
+
+
+def test_database_extractdocumentgivenid_malformed(mock_database):
+    """Assert that the database returns an IOError if the id is malformed."""
+    db = proteinnetworks.database.Database(password="bla")
+    with pytest.raises(IOError):
+        db.extractDocumentGivenId("bla")

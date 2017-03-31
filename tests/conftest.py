@@ -818,6 +818,16 @@ data = [{
     '_id': ObjectId('58dbe045ef677d54224a01dc'),
     'detectionmethod': 'Infomap',
     'date': datetime.datetime(2017, 3, 29, 16, 26, 45, 623000)
+}, {
+    'pdbref': '2vcr',
+    'data':
+    [[2, 1, 44], [3, 1, 40], [3, 2, 56], [4, 2, 56], [4, 3, 70], [5, 3, 23]],
+    'doctype': 'edgelist',
+    'edgelisttype': 'residue',
+    'hydrogenstatus': 'noH',
+    '_id': ObjectId('58dcf13fef677d54224a01da'),
+    'date': datetime.datetime(2017, 3, 29, 16, 26, 39, 894000),
+    'scaling': 4.5
 }]
 
 
@@ -918,10 +928,19 @@ def mock_database(monkeypatch):
                                 self.inserted_id = ObjectId("58dbe045ef677d54224a01d2")
                         return Result()
 
-                def find_one(_id):
-                    """Return the document matching the given _id."""
+                def find_one(doc):
+                    """Return the document matching the given query."""
+                    global data
                     for datum in data:
-                        if datum['_id'] == _id:
+                        match = True
+                        counter = 0
+                        for key in doc:
+                            if key not in datum:
+                                continue
+                            counter += 1
+                            if doc[key] != datum[key]:
+                                match = False
+                        if match and counter:
                             return datum
 
     monkeypatch.setattr("pymongo.MongoClient", Garry)

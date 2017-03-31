@@ -35,6 +35,7 @@ NB this might be too large for MongoDB to handle (>16MB)
 
 import pymongo
 from pymongo.errors import ConnectionFailure
+from bson.errors import InvalidId
 from bson.objectid import ObjectId
 import datetime
 import urllib.request
@@ -58,7 +59,7 @@ class Database:
             self.client.admin.command('ismaster')
         except ConnectionFailure:
             # Propagate the exception back up to whoever called it
-            raise IOError
+            raise IOError("Couldn't connect to the database")
 
         self.db = self.client.proteinnetworks
         self.collection = self.db.proteinnetworks
@@ -85,7 +86,7 @@ class Database:
         elif numresults == 1:
             return cursor[0]
         else:
-            raise IOError  # TODO Custom exception
+            raise IOError("More than one edgelist found matching the query")
 
     def depositEdgelist(self, pdbref, edgelisttype, hydrogenstatus, scaling,
                         edges):
@@ -134,7 +135,7 @@ class Database:
         cursor = self.collection.find(query)
         numresults = cursor.count()
         if numresults > 1:
-            raise IOError
+            raise IOError("More than one PDB file found")
         elif numresults == 1:
             return cursor[0]['data']
         else:
@@ -192,13 +193,16 @@ class Database:
             elif numresults == 1:
                 return cursor[0]
             else:
-                raise IOError  # TODO Custom exception
+                raise IOError("More than one partition found")
         else:
             print("No edgelist found with the given id")
 
     def extractDocumentGivenId(self, documentid):
         """Return a document given an id. Return None if not found."""
-        return self.collection.find_one({"_id": ObjectId(documentid)})
+        try:
+            return self.collection.find_one({"_id": ObjectId(documentid)})
+        except InvalidId:
+            raise IOError("Invalid ID")
 
     def depositPartition(self, pdbref, edgelistid, detectionmethod, r, N,
                          data):
@@ -214,25 +218,79 @@ class Database:
             "detectionmethod": detectionmethod,
             "edgelistid": edgelistid,
         }
+
         if r != -1:
             partition['r'] = r
         if N != -1:
             partition['N'] = N
+
         cursor = self.collection.find(partition)
         numresults = cursor.count()
         if numresults:
-            print(
+            raise IOError(
                 "Partition already exists in the database! Something has gone terribly wrong!"
             )
-            raise IOError
         else:
             partition["date"] = datetime.datetime.utcnow()
             partition["data"] = data
+
+            self.validatePartition(partition)
+
             print("adding partition to database...")
 
-            print(partition)
             result = self.collection.insert_one(partition)
             return result.inserted_id
+
+    def validatePartition(self, partition):
+        """
+        Test that the proposed partition has the correct arguments.
+
+        If the partition is invalid, throw an IOError. Otherwise, return None.
+        """
+        # Validate the pdbref field (string of length 4):
+        if type(partition['pdbref']) != str and len(partition['pdbref']) != 4:
+            raise IOError("PDB reference malformed: ", partition['pdbref'])
+        # Validate the edgelistId (valid ObjectId and refers to edgelist with same pdbref)
+        if type(partition['edgelistid']) != ObjectId:
+            raise IOError("edgelistid must be of type ObjectId")
+        else:
+            doc = self.extractDocumentGivenId(partition['edgelistid'])
+            if not doc:
+                raise TypeError("edgelist referenced does not exist")
+            if doc['pdbref'] != partition['pdbref']:
+                raise IOError(
+                    "edgelist referenced corresponds to different PDB file.")
+        # Validate the detection method (AFG or Infomap)
+        if partition['detectionmethod'] != "AFG" and partition[
+                'detectionmethod'] != "Infomap":
+            raise IOError(
+                "Only AFG and Infomap are permitted as detection methods.")
+        # Validate the r and N values (r float, N integer, must be one or the other)
+        if 'r' in partition.keys():
+            if "N" in partition.keys():
+                raise IOError("r and N cannot both be community parameters")
+            if type(partition['r']) != float:
+                raise IOError("r must be of type 'float'")
+        elif 'N' not in partition.keys():
+            raise IOError("Must have one of 'r' and 'N'")
+        elif type(partition['N']) != int:
+            raise IOError("N must be of type 'int'")
+        # Validate the partition itself (array of integers without gaps.)
+        if type(partition['data']) != list:
+            raise IOError('partition must be a list')
+        else:
+            for item in partition['data']:
+                if type(item) != int and type(item) != list:
+                    raise IOError(
+                        'partition must be a list of ints (perhaps nested, not',
+                        type(item))
+            numcoms = len(set(partition['data']))
+            try:
+                for i in range(numcoms):
+                    # Check there is at least one item in the list for all coms.
+                    partition['data'].index(i + 1)
+            except ValueError:
+                raise IOError('partition invalid: gaps found in labelling')
 
     def getNumberOfDocuments(self):
         """Return the total number of documents in the collection."""
