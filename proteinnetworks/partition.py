@@ -14,7 +14,13 @@ class Partition:
     Offers partition inspection and visualisation methods.
     """
 
-    def __init__(self, pdbref, edgelistid, detectionmethod, r=-1, N=-1):
+    def __init__(self,
+                 pdbref,
+                 edgelistid,
+                 detectionmethod,
+                 r=-1,
+                 N=-1,
+                 database=None):
         """
         Initialise the Partition with a given set of params.
 
@@ -37,17 +43,22 @@ class Partition:
         if N != -1:
             self.N = N
         # Try to connect to the database
-        try:
-            self.database = Database()
-            print("successfully connected")
-        except IOError:
-            print("Couldn't connect to server")
-            sys.exit()
-        # Attempt to extract the edgelist matching the given params
+
+        if database:
+            self.database = database
+        else:
+            try:
+                self.database = Database()
+                print("successfully connected")
+            except IOError:
+                print("Couldn't connect to server")
+                sys.exit()
+        # Attempt to extract the partition matching the given params
         doc = self.database.extractPartition(pdbref, edgelistid,
                                              detectionmethod, r, N)
         if doc:
-            self.partition = doc['data']
+            self.data = doc['data']
+            self.partitionid = doc['_id']
             print("partition found")
         else:
             print("no partition fitting those parameters found: generating")
@@ -55,8 +66,9 @@ class Partition:
             data = self.generatePartition(pdbref, edgelistid, detectionmethod,
                                           r, N)
             self.data = data
-            self.database.depositPartition(pdbref, edgelistid, detectionmethod,
-                                           r, N, data)
+
+            self.partitionid = self.database.depositPartition(
+                pdbref, edgelistid, detectionmethod, r, N, data)
 
     def generatePartition(self, pdbref, edgelistid, detectionmethod, r, N):
         """Generate a community structure using the parameters supplied."""

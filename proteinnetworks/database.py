@@ -305,18 +305,31 @@ class Database:
             if type(partition['data']) != list:
                 raise IOError('partition must be a list')
             else:
+                # partition['data'] should either be a list of lists or a list.
                 for item in partition['data']:
                     if type(item) != int and type(item) != list:
                         raise IOError(
                             'partition must be a list of ints (perhaps nested, not',
                             type(item))
-                numcoms = len(set(partition['data']))
-                try:
-                    for i in range(numcoms):
-                        # Check there is at least one item in the list for all coms.
-                        partition['data'].index(i + 1)
-                except ValueError:
-                    raise IOError('partition invalid: gaps found in labelling')
+                # if a 1D list
+                if not any(isinstance(i, list) for i in partition['data']):
+                    numcoms = len(set(partition['data']))
+                    try:
+                        for i in range(numcoms):
+                            # Check there is at least one item in the list for all coms.
+                            partition['data'].index(i + 1)
+                    except ValueError:
+                        raise IOError('partition invalid: gaps found in labelling')
+                # if a nested list
+                elif all(isinstance(i, list) for i in partition['data']):
+                    for column in partition['data']:
+                        numcoms = len(set(column))
+                        try:
+                            for j in range(numcoms):
+                                # Check there is at least one item in the list for all coms.
+                                column.index(j + 1)
+                        except ValueError:
+                            raise IOError('partition invalid: gaps found in labelling')
 
     def getNumberOfDocuments(self):
         """Return the total number of documents in the collection."""
