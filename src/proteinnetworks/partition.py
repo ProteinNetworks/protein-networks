@@ -4,6 +4,8 @@ import sys
 import subprocess
 import numpy as np
 import os
+import matplotlib.pyplot as plt
+from palettable.colorbrewer.qualitative import Set3_12
 from .database import Database
 
 
@@ -89,6 +91,35 @@ class Partition:
         os.remove("temp.dat")
         os.remove("temp.tree")
         return partition
+
+    def plotStripeDiagram(self, includePFAMDomains=False):
+        """
+        Plot the partition as a set of "stripe" plots.
+
+        The includePFAMDomains flag plots the known PFAM structure alongside.
+        """
+        # Convert the list (or nested list) to a numpy array, for use with imshow.
+        stripes = np.asarray(self.data, dtype=int)
+        if includePFAMDomains:
+            pass  # for now
+            # sequenceArray = getPFAMDomainContactNetwork(pdbRef, args.pdb, inputArray)
+            # inputArray = numpy.vstack((sequenceArray, inputArray))
+        # xvalues = np.asarray(list(partition.keys()), dtype=int)
+
+        fig, axes = plt.subplots(nrows=np.shape(stripes)[0], figsize=(5, 5))
+
+        for i, ax in enumerate(axes):
+            ax.imshow(
+                np.vstack(
+                    2 * [stripes[i, :]]),  # vstack otherwise imshow complains
+                aspect=10,
+                cmap=Set3_12.mpl_colormap,
+                interpolation="nearest")
+            ax.xaxis.set_ticks_position('bottom')
+            ax.yaxis.set_visible(False)
+        plt.suptitle(self.pdbref)
+        plt.xlabel('Atom number')
+        plt.show()
 
 
 def treeFileToNestedLists(inputTreeFile):

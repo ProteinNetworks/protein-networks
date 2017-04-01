@@ -24,64 +24,71 @@ import pymongo
 import json
 
 if __name__ == "__main__":
-    client = pymongo.MongoClient()
+    password = input("password: ").strip()
+    client = pymongo.MongoClient(
+        "mongodb://owner:" + password + "@127.0.0.1/proteinnetworks",
+        serverSelectionTimeoutMS=1000)
     db = client.proteinnetworks
     collection = db.proteinnetworks
     validator = {
-        "$and": [{
-            "pdbref": {
-                "$type": "string"
-            }
-        }, {
-            "data": {
-                "$exists": True
-            }
-        }, {
-            "$or": [{
-                "$and": [{
-                    "doctype": "edgelist"
-                }, {
-                    "$or": [{
-                        "edgelisttype": "atomic"
-                    }, {
-                        "edgelisttype": "residue"
-                    }]
-                }, {
-                    "$or": [{
-                        "hydrogenstatus": "noH"
-                    }, {
-                        "hydrogenstatus": "Hatoms"
-                    }, {
-                        "hydrogenstatus": "Hbonds"
-                    }]
-                }, {
-                    "scaling": {
-                        "$type": "number"
-                    }
-                }]
+        "$or": [{
+            "$and": [{
+                "pdbref": {
+                    "$type": "string"
+                }
             }, {
-                "$and": [{
-                    "doctype": "partition"
-                }, {
-                    "edgelistid": {
-                        "$type": "objectId"
-                    }
-                }, {
-                    "$or": [{
-                        "$and": [{
-                            "detectionmethod": "AFG"
+                "data": {
+                    "$exists": True
+                }
+            }, {
+                "$or": [{
+                    "$and": [{
+                        "doctype": "edgelist"
+                    }, {
+                        "$or": [{
+                            "edgelisttype": "atomic"
                         }, {
-                            "r": {
-                                "$type": "number"
-                            }
+                            "edgelisttype": "residue"
                         }]
                     }, {
-                        "detectionmethod": "Infomap"
+                        "$or": [{
+                            "hydrogenstatus": "noH"
+                        }, {
+                            "hydrogenstatus": "Hatoms"
+                        }, {
+                            "hydrogenstatus": "Hbonds"
+                        }]
+                    }, {
+                        "scaling": {
+                            "$type": "number"
+                        }
                     }]
+                }, {
+                    "$and": [{
+                        "doctype": "partition"
+                    }, {
+                        "edgelistid": {
+                            "$type": "objectId"
+                        }
+                    }, {
+                        "$or": [{
+                            "$and": [{
+                                "detectionmethod": "AFG"
+                            }, {
+                                "r": {
+                                    "$type": "number"
+                                }
+                            }]
+                        }, {
+                            "detectionmethod": "Infomap"
+                        }]
+                    }]
+                }, {
+                    "doctype": "pdbfile"
                 }]
-            }, {
-                "doctype": "pdbfile"
             }]
+        }, {
+            "doctype": "mapping"
         }]
     }
     db.command("collMod", "proteinnetworks", validator=validator)

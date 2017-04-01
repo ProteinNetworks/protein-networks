@@ -20,8 +20,8 @@ import pymongo
 if __name__ == "__main__":
     password = input("password: ").strip()
     client = pymongo.MongoClient(
-            "mongodb://writeAccess:" + password + "@127.0.0.1/proteinnetworks",
-            serverSelectionTimeoutMS=1000)
+        "mongodb://writeAccess:" + password + "@127.0.0.1/proteinnetworks",
+        serverSelectionTimeoutMS=1000)
     db = client.proteinnetworks
     collection = db.proteinnetworks
 
@@ -29,6 +29,7 @@ if __name__ == "__main__":
     # print(collection.find({"doctype": "pdbfile"}).count())
     collection.create_index(
         "pdbref", unique=True, partialFilterExpression={"doctype": "pdbfile"})
+
     collection.create_index(
         [("pdbref", pymongo.ASCENDING), ("edgelisttype", pymongo.ASCENDING),
          ("hydrogenstatus", pymongo.ASCENDING),

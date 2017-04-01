@@ -1,5 +1,7 @@
 import proteinnetworks.partition
 from bson.objectid import ObjectId
+import os
+import subprocess
 """
 Unit tests for the partition module.
 
@@ -65,3 +67,15 @@ test: if the treefile doesn't exist we throw a FileNotFoundError
       if the treefile format is unexpected we throw an IOError
       if the treefile is legit we return a list of lists.
 """
+
+
+def test_partition_treefiletonestedlists_success(mock_database, mock_subprocess):
+    """
+    Test that a correctly formatted treefile will generate a list of lists.
+
+    Uses the mocked "subprocess.run()" to generate the tree file.
+    """
+    subprocess.run("bla")
+    listoflists = proteinnetworks.partition.treeFileToNestedLists("temp.tree")
+    assert listoflists
+    os.remove("temp.tree")
