@@ -18,7 +18,10 @@ Four unique partial indices:
 import pymongo
 
 if __name__ == "__main__":
-    client = pymongo.MongoClient()
+    password = input("password: ").strip()
+    client = pymongo.MongoClient(
+            "mongodb://writeAccess:" + password + "@127.0.0.1/proteinnetworks",
+            serverSelectionTimeoutMS=1000)
     db = client.proteinnetworks
     collection = db.proteinnetworks
 
@@ -39,6 +42,6 @@ if __name__ == "__main__":
         partialFilterExpression={"detectionmethod": "AFG"})
     collection.create_index(
         [("pdbref", pymongo.ASCENDING), ("edgelistid", pymongo.ASCENDING),
-         ("detectionmethod", pymongo.ASCENDING)],
+         ("detectionmethod", pymongo.ASCENDING), ("N", pymongo.ASCENDING)],
         unique=True,
         partialFilterExpression={"detectionmethod": "Infomap"})

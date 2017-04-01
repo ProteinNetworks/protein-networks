@@ -17,4 +17,6 @@ setup(
     license=license,
     setup_requires=['pytest_runner'],
     tests_require=['pytest'],
-    packages=find_packages(exclude=('tests')))
+    packages=find_packages("src", exclude=('tests')),
+    package_dir={'': 'src'}
+)
