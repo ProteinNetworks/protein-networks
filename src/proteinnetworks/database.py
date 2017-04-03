@@ -389,3 +389,63 @@ class Database:
 
         cursor = self.collection.find(query)
         return cursor
+
+    def extractSuperNetwork(self, pdbref, partitionid):
+        """
+        Attempt to extract the supernetwork.
+
+        Return None if the parameters are valid, but the partition isn't found.
+        """
+        # Check that the edgelistid maps to a database entry
+        try:
+            numberOfPartitions = self.collection.find({
+                "_id": ObjectId(partitionid),
+                "doctype": "partition"
+            }).count()
+        except InvalidId:
+            raise IOError("edgelistid not valid:", partitionid)
+
+        if numberOfPartitions:
+            query = {
+                "pdbref": pdbref,
+                "doctype": "supernetwork",
+                "partitionid": partitionid
+            }
+            cursor = self.collection.find(query)
+            numresults = cursor.count()
+            if not numresults:
+                return
+            elif numresults == 1:
+                return cursor[0]
+            else:
+                raise IOError("More than one partition found")
+        else:
+            print("No partition found with the given id")
+
+    def depositSuperNetwork(self, pdbref, partitionid, level, data):
+        """
+        Deposit supernetwork into the database.
+
+        Check that the given partition isn't already in the database,
+        then deposit and return the _id.
+        """
+        supernetwork = {
+            "pdbref": pdbref,
+            "doctype": "supernetwork",
+            "partitionid": partitionid,
+            "level": level
+        }
+
+        cursor = self.collection.find(supernetwork)
+        numresults = cursor.count()
+        if numresults:
+            raise IOError(
+                "Partition already exists in the database! Something has gone terribly wrong!"
+            )
+        else:
+            supernetwork['data'] = data
+
+            print("adding supernetwork to database...")
+
+            result = self.collection.insert_one(supernetwork)
+            return result.inserted_id

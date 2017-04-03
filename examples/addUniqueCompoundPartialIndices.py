@@ -28,8 +28,14 @@ if __name__ == "__main__":
     collection.drop_indexes()
     # print(collection.find({"doctype": "pdbfile"}).count())
     collection.create_index(
+        [("pdbref", pymongo.ASCENDING), ("mappingtype", pymongo.ASCENDING)], unique=False, partialFilterExpression={"doctype": "mapping"})
+    collection.create_index(
         "pdbref", unique=True, partialFilterExpression={"doctype": "pdbfile"})
-
+    collection.create_index(
+        [("pdbref", pymongo.ASCENDING), ("partitionid", pymongo.ASCENDING),
+         ("level", pymongo.ASCENDING)],
+        unique=True,
+        partialFilterExpression={"doctype": "supernetwork"})
     collection.create_index(
         [("pdbref", pymongo.ASCENDING), ("edgelisttype", pymongo.ASCENDING),
          ("hydrogenstatus", pymongo.ASCENDING),

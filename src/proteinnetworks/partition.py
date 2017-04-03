@@ -84,7 +84,7 @@ class Partition:
         # Run Infomap on the edgelist
         subprocess.run([
             "Infomap", "temp.dat", ".", "-i", "link-list", "--tree", "-N",
-            str(N)
+            str(N), "--silent"
         ])
         partition = treeFileToNestedLists("temp.tree")
         # Remove temporary files
@@ -160,6 +160,8 @@ class Partition:
         # Read the pdb file, find the actual residue numbers.
         nodes = []
         pdb = self.database.extractPDBFile(self.pdbref)
+        if not pdb:
+            pdb = self.database.fetchPDBFileFromWeb(self.pdbref)
         for residue in residues:
             chain = residue['chainid']
             startResidue = int(residue['startresidue'])

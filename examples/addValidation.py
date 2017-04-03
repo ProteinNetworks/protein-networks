@@ -86,6 +86,18 @@ if __name__ == "__main__":
                 "doctype": "pdbfile"
             }, {
                 "doctype": "mapping"
+            }, {
+                "$and": [{
+                    "doctype": "supernetwork"
+                }, {
+                    "partitionid": {
+                        "$type": "objectId"
+                    }
+                }, {
+                    "level": {
+                        "$type": "number"
+                    }
+                }]
             }]
         }]
     }

@@ -11,70 +11,90 @@ import numpy as np
 import networkx as nx
 import sys
 import matplotlib.pyplot as plt
+import warnings
+
 
 class SuperNetwork:
-    """A network generated from the community structure of the protein."""
+    """
+    A network generated from the community structure of the protein.
+
+    Pull from the database if possible: otherwise generate anew.
+    """
 
     def __init__(self, inputpartition):
         """Generate the network from an existing Partition."""
         # Get the input partition and edgelist
         self.pdbref = inputpartition.pdbref  # Save the details on the partition used
-        partition = inputpartition.data
-        edgelist = inputpartition.database.extractDocumentGivenId(
-            inputpartition.edgelistid)['data']
+        self.database = inputpartition.database
+        self.partitionid = inputpartition.partitionid
 
-        # Find the level of the partition (assuming this is Infomap) with the best Jaccard
-        try:
-            pfamDomains = np.asarray(
-                inputpartition.getPFAMDomainArray(), dtype=int)
-        except ValueError:
-            print("No PFAM entry -> cannot generate supernetwork")
-            sys.exit()
+        # Attempt to extract the supernetwork matching the given params
+        doc = self.database.extractSuperNetwork(self.pdbref, self.partitionid)
 
-        maxJaccard = -1
-        maxI = -1
-        for i, col in enumerate(partition):
-            jaccard = getModifiedJaccard(
-                pfamDomains, np.asarray(
-                    col, dtype=int))
-            print("Level {} has Jaccard {}".format(i, jaccard))
-            if jaccard > maxJaccard:
-                maxJaccard = jaccard
-                maxI = i
-        print("Using level {}".format(maxI))
-        self.level = maxI
-        partition = partition[maxI]
+        if doc:
+            self.data = doc['data']
+            self.level = doc['level']
+            print("supernetwork found")
+        else:
+            partition = inputpartition.data
+            edgelist = inputpartition.database.extractDocumentGivenId(
+                inputpartition.edgelistid)['data']
 
-        # Generate the supernetwork
-        communityEdgeList = {}
-        for i, j, _ in edgelist:
-            com_i, com_j = partition[i - 1], partition[j - 1]
-            if com_i != com_j:
-                if not (com_i, com_j) in communityEdgeList:
-                    if (com_j, com_i) in communityEdgeList:
-                        communityEdgeList[(com_j, com_i)] += 1
+            # Find the level of the partition (assuming this is Infomap) with the best Jaccard
+            try:
+                pfamDomains = np.asarray(
+                    inputpartition.getPFAMDomainArray(), dtype=int)
+            except ValueError:
+                print("No PFAM entry -> cannot generate supernetwork")
+                raise ValueError
+
+            maxJaccard = -1
+            maxI = -1
+            for i, col in enumerate(partition):
+                jaccard = getModifiedJaccard(
+                    pfamDomains, np.asarray(
+                        col, dtype=int))
+                print("Level {} has Jaccard {}".format(i, jaccard))
+                if jaccard > maxJaccard:
+                    maxJaccard = jaccard
+                    maxI = i
+            print("Using level {}".format(maxI))
+            self.level = maxI
+            partition = partition[maxI]
+
+            # Generate the supernetwork
+            communityEdgeList = {}
+            for i, j, _ in edgelist:
+                com_i, com_j = partition[int(i) - 1], partition[int(j) - 1]
+                if com_i != com_j:
+                    if not (com_i, com_j) in communityEdgeList:
+                        if (com_j, com_i) in communityEdgeList:
+                            communityEdgeList[(com_j, com_i)] += 1
+                        else:
+                            communityEdgeList[(com_i, com_j)] = 1
                     else:
-                        communityEdgeList[(com_i, com_j)] = 1
-                else:
-                    communityEdgeList[(com_i, com_j)] += 1
+                        communityEdgeList[(com_i, com_j)] += 1
 
-        communityEdgeListSorted = []
-        for row, weight in communityEdgeList.items():
-            i, j = row
-            communityEdgeListSorted.append([i, j, weight])
-        communityEdgeListSorted.sort()
+            communityEdgeListSorted = []
+            for row, weight in communityEdgeList.items():
+                i, j = row
+                communityEdgeListSorted.append([i, j, weight])
+            communityEdgeListSorted.sort()
 
-        self.edgelist = communityEdgeListSorted
+            self.data = communityEdgeListSorted
+            self.database.depositSuperNetwork(self.pdbref, self.partitionid, self.level, self.data)
 
     def draw(self):
-        """Draw the reduced edgelist using NetworkX.""" 
+        """Draw the reduced edgelist using NetworkX."""
         G = nx.Graph()
-        for i, j, weight in self.edgelist:
+        for i, j, weight in self.data:
             G.add_edge(i, j, weight=weight)
 
         pos = nx.spring_layout(G, k=10)
+        fig, ax = plt.subplots(figsize=(5, 5))
 
-        fig, ax = plt.subplots(figsize=(5,5))
+        # Suppress MPL's complaining, as it's a NetworkX problem.
+        warnings.filterwarnings("ignore")
         nx.draw(G, pos=pos, node_color="grey")
         ax.set_title("Community network for {}".format(self.pdbref))
         plt.show()
