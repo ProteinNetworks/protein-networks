@@ -31,64 +31,62 @@ if __name__ == "__main__":
     db = client.proteinnetworks
     collection = db.proteinnetworks
     validator = {
-        "$or": [{
-            "$and": [{
-                "pdbref": {
-                    "$type": "string"
-                }
-            }, {
-                "data": {
-                    "$exists": True
-                }
-            }, {
-                "$or": [{
-                    "$and": [{
-                        "doctype": "edgelist"
-                    }, {
-                        "$or": [{
-                            "edgelisttype": "atomic"
-                        }, {
-                            "edgelisttype": "residue"
-                        }]
-                    }, {
-                        "$or": [{
-                            "hydrogenstatus": "noH"
-                        }, {
-                            "hydrogenstatus": "Hatoms"
-                        }, {
-                            "hydrogenstatus": "Hbonds"
-                        }]
-                    }, {
-                        "scaling": {
-                            "$type": "number"
-                        }
-                    }]
-                }, {
-                    "$and": [{
-                        "doctype": "partition"
-                    }, {
-                        "edgelistid": {
-                            "$type": "objectId"
-                        }
-                    }, {
-                        "$or": [{
-                            "$and": [{
-                                "detectionmethod": "AFG"
-                            }, {
-                                "r": {
-                                    "$type": "number"
-                                }
-                            }]
-                        }, {
-                            "detectionmethod": "Infomap"
-                        }]
-                    }]
-                }, {
-                    "doctype": "pdbfile"
-                }]
-            }]
+        "$and": [{
+            "pdbref": {
+                "$type": "string"
+            }
         }, {
-            "doctype": "mapping"
+            "data": {
+                "$exists": True
+            }
+        }, {
+            "$or": [{
+                "$and": [{
+                    "doctype": "edgelist"
+                }, {
+                    "$or": [{
+                        "edgelisttype": "atomic"
+                    }, {
+                        "edgelisttype": "residue"
+                    }]
+                }, {
+                    "$or": [{
+                        "hydrogenstatus": "noH"
+                    }, {
+                        "hydrogenstatus": "Hatoms"
+                    }, {
+                        "hydrogenstatus": "Hbonds"
+                    }]
+                }, {
+                    "scaling": {
+                        "$type": "number"
+                    }
+                }]
+            }, {
+                "$and": [{
+                    "doctype": "partition"
+                }, {
+                    "edgelistid": {
+                        "$type": "objectId"
+                    }
+                }, {
+                    "$or": [{
+                        "$and": [{
+                            "detectionmethod": "AFG"
+                        }, {
+                            "r": {
+                                "$type": "number"
+                            }
+                        }]
+                    }, {
+                        "detectionmethod": "Infomap"
+                    }]
+                }]
+            }, {
+                "doctype": "pdbfile"
+            }, {
+                "doctype": "mapping"
+            }]
         }]
     }
     db.command("collMod", "proteinnetworks", validator=validator)
