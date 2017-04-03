@@ -377,3 +377,15 @@ class Database:
                     raise IOError("No self-loops permitted")
             if smallestNode != 1:
                 raise IOError("Node labelling should start at 1")
+
+    def extractMappings(self, pdbref, mappingtype):
+        """Find all documents corresponding to mappings (e.g. to PFAM) for a given pdb ref."""
+        # Check that the edgelistid maps to a database entry
+        query = {
+            "pdbref": pdbref,
+            "doctype": "mapping",
+            "mappingtype": mappingtype,
+        }
+
+        cursor = self.collection.find(query)
+        return cursor

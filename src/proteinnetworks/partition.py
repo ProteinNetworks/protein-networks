@@ -100,26 +100,101 @@ class Partition:
         """
         # Convert the list (or nested list) to a numpy array, for use with imshow.
         stripes = np.asarray(self.data, dtype=int)
+        numPlots = np.shape(stripes)[0] + 1 if includePFAMDomains else np.shape(stripes)[0]
+
+        fig, axes = plt.subplots(nrows=numPlots, figsize=(5, 5), sharex=True)
+
         if includePFAMDomains:
-            pass  # for now
-            # sequenceArray = getPFAMDomainContactNetwork(pdbRef, args.pdb, inputArray)
-            # inputArray = numpy.vstack((sequenceArray, inputArray))
-        # xvalues = np.asarray(list(partition.keys()), dtype=int)
-
-        fig, axes = plt.subplots(nrows=np.shape(stripes)[0], figsize=(5, 5))
-
-        for i, ax in enumerate(axes):
-            ax.imshow(
+            pfamDomainArray = self.getPFAMDomainArray()
+            assert len(pfamDomainArray) == np.shape(stripes)[1]
+            stripes = np.vstack((pfamDomainArray, stripes))
+            axes[0].imshow(
                 np.vstack(
-                    2 * [stripes[i, :]]),  # vstack otherwise imshow complains
+                    2 * [stripes[0, :]]),  # vstack otherwise imshow complains
                 aspect=10,
-                cmap=Set3_12.mpl_colormap,
-                interpolation="nearest")
-            ax.xaxis.set_ticks_position('bottom')
-            ax.yaxis.set_visible(False)
+                cmap='viridis')
+            axes[0].xaxis.set_ticks_position('bottom')
+            axes[0].yaxis.set_visible(False)
+            axes[0].set_title("PFAM domain structure")
+            axes[1].set_title("Generated structure")
+            for i, ax in enumerate(axes[1:]):
+                ax.imshow(
+                    np.vstack(
+                        2 * [stripes[i + 1, :]]),  # vstack otherwise imshow complains
+                    aspect=10,
+                    cmap=Set3_12.mpl_colormap,
+                    interpolation="nearest")
+                ax.xaxis.set_ticks_position('bottom')
+                ax.yaxis.set_visible(False)
+        else:
+            for i, ax in enumerate(axes):
+                ax.imshow(
+                    np.vstack(
+                        2 * [stripes[i, :]]),  # vstack otherwise imshow complains
+                    aspect=10,
+                    cmap=Set3_12.mpl_colormap,
+                    interpolation="nearest")
+                ax.xaxis.set_ticks_position('bottom')
+                ax.yaxis.set_visible(False)
+
         plt.suptitle(self.pdbref)
-        plt.xlabel('Atom number')
+        plt.tight_layout()
+        plt.subplots_adjust(top=0.85)
+        plt.xlabel('Residue number')
         plt.show()
+
+    def getPFAMDomainArray(self):
+        """
+        Get an array corresponding to the PFAM domains for a protein.
+
+        Indexed by residue number, for now.
+        """
+        residues = []
+        # Get the chain ID, start residue and end residue for the protein.
+        mappings = self.database.extractMappings(self.pdbref, mappingtype="PFAM")
+        if not mappings:
+            raise ValueError("No PFAM data found for protein:", self.pdbref)
+        else:
+            residues = [x['data'] for x in mappings]
+
+        # Read the pdb file, find the actual residue numbers.
+        nodes = []
+        pdb = self.database.extractPDBFile(self.pdbref)
+        for residue in residues:
+            chain = residue['chainid']
+            startResidue = int(residue['startresidue'])
+            endResidue = int(residue['endresidue'])
+            residueCounter = 0
+            prevRes = 0
+            firstNode = -1
+            lastNode = -1
+            for line in pdb:
+                if line == "ENDMDL":
+                    break
+                if line[0:4] == "ATOM":
+                    residueNumber = int(line[22:26])
+                    if residueNumber != prevRes:
+                        residueCounter += 1
+                    prevRes = residueNumber
+                    # now we have the node index.
+                    if line[21] == chain and residueNumber == startResidue:
+                        firstNode = residueCounter
+                        startResidue = -1
+                    if line[21] == chain and residueNumber == endResidue:
+                        lastNode = residueCounter
+                        break
+            nodes.append([firstNode, lastNode])
+
+        # Get the size of the array, given that the list may be nested
+        n = len(self.data) if not any(isinstance(i, list) for i in self.data) else len(self.data[0])
+        expectedDomains = np.ones(n, dtype=int)
+        counter = 2
+        for domain in nodes:
+            startingindex = int(domain[0]) - 1
+            endindex = int(domain[1])
+            expectedDomains[startingindex:endindex] = counter
+            counter += 1
+        return expectedDomains
 
 
 def treeFileToNestedLists(inputTreeFile):
