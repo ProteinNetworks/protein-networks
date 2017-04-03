@@ -1,2 +1,5 @@
 pymongo
 pytest
+numpy
+matplotlib
+palettable
