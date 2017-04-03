@@ -3,3 +3,4 @@ pytest
 numpy
 matplotlib
 palettable
+networkx
