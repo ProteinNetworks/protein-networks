@@ -9,9 +9,10 @@ best correspondence to the PFAM domains is chosen to generate a supernetwork.
 """
 import numpy as np
 import networkx as nx
-import sys
 import matplotlib.pyplot as plt
 import warnings
+import itertools
+from .partition import Partition
 
 
 class SuperNetwork:
@@ -34,7 +35,7 @@ class SuperNetwork:
         if doc:
             self.data = doc['data']
             self.level = doc['level']
-            print("supernetwork found")
+            # print("supernetwork found")
         else:
             partition = inputpartition.data
             edgelist = inputpartition.database.extractDocumentGivenId(
@@ -82,7 +83,34 @@ class SuperNetwork:
             communityEdgeListSorted.sort()
 
             self.data = communityEdgeListSorted
-            self.database.depositSuperNetwork(self.pdbref, self.partitionid, self.level, self.data)
+            self.database.depositSuperNetwork(self.pdbref, self.partitionid,
+                                              self.level, self.data)
+
+    @classmethod
+    def fromPartitionId(SuperNetwork, partitionid, database):
+        """
+        Given a database and a partitionid, generate the Partition class.
+
+        Then generate the SuperNetwork as normal from the partition.
+        FIXME: this is really very convoluted.
+        """
+        partitionDetails = database.extractDocumentGivenId(partitionid)
+
+        if 'r' in partitionDetails:
+            inputPartition = Partition(
+                partitionDetails['pdbref'],
+                partitionDetails['edgelistid'],
+                partitionDetails['detectionmethod'],
+                r=partitionDetails['r'],
+                database=database)
+        elif 'N' in partitionDetails:
+            inputPartition = Partition(
+                partitionDetails['pdbref'],
+                partitionDetails['edgelistid'],
+                partitionDetails['detectionmethod'],
+                N=partitionDetails['N'],
+                database=database)
+        return SuperNetwork(inputpartition=inputPartition)
 
     def draw(self):
         """Draw the reduced edgelist using NetworkX."""
@@ -98,6 +126,67 @@ class SuperNetwork:
         nx.draw(G, pos=pos, node_color="grey")
         ax.set_title("Community network for {}".format(self.pdbref))
         plt.show()
+
+    def getIsomorphs(self):
+        """Get all proteins in the database with an isomorphic supernetwork."""
+        # Generate the NetworkX graph for the supernetwork
+        G = nx.Graph()
+        for i, j, weight in self.data:
+            G.add_edge(i, j, weight=weight)
+
+        # Get a cursor for all supernetworks in the database
+        proteins = self.database.extractAllSuperNetworks(pdbref=self.pdbref)
+        isomorphs = []
+        for protein in proteins:
+            G2 = nx.Graph()
+            for i, j, weight in protein['data']:
+                G2.add_edge(i, j, weight=weight)
+            if nx.faster_could_be_isomorphic(G, G2) and nx.is_isomorphic(G,
+                                                                         G2):
+                isomorphs.append(protein['pdbref'])
+        return isomorphs
+
+    def getWeakIsomorphs(self, subset=None):
+        """
+        Get all proteins in the database with an weakly isomorphic supernetwork.
+
+        Returns a list [self.pdbref, otherpdbref, simscore] for all proteins with
+        a simscore > 0.5.
+
+        If a subset of the supernetworks are given, this is used. (subset must be a numpy array)
+        """
+        # Generate the NetworkX graph for the supernetwork
+        G = nx.Graph()
+        for i, j, weight in self.data:
+            G.add_edge(i, j, weight=weight)
+
+        G = nx.convert_node_labels_to_integers(G)
+        # Get a cursor for all supernetworks in the database
+
+        if subset.any():
+            proteins = subset
+        else:
+            proteins = self.database.extractAllSuperNetworks(pdbref=self.pdbref)
+        weakIsomorphs = []
+        for protein in proteins:
+            G2 = nx.Graph()
+            for i, j, weight in protein['data']:
+                G2.add_edge(i, j, weight=weight)
+
+            G2 = nx.convert_node_labels_to_integers(G2)
+            # Get the maximum common subgraph for the two supernetworks
+            try:
+                MCS = getMCS(G, G2)
+            except ValueError:
+                continue
+                similarity = 1 - MCS.number_of_nodes() / (max(
+                    G.number_of_nodes(), G2.number_of_nodes()))
+
+                if similarity > 0.5:
+                    weakIsomorphs.append(
+                        [self.pdbref, protein['pdbref'], similarity])
+
+        return weakIsomorphs
 
 
 def getModifiedJaccard(expectedArray, generatedArray):
@@ -142,3 +231,29 @@ def getModifiedJaccard(expectedArray, generatedArray):
         jaccard = sum(jaccard)
         jaccards.append(jaccard)
     return np.mean(jaccards)
+
+
+def getMCS(G1, G2):
+    """Take two networkx graphs, return the MCS as a networkx graph."""
+    # Let G1 be the smaller graph
+    if G1.number_of_nodes() > G2.number_of_nodes():
+        temp = G2
+        G2 = G1
+        G1 = temp
+
+    N_G1 = G1.number_of_nodes()
+    N_G2 = G2.number_of_nodes()
+    if N_G1 > 30:
+        raise ValueError("Graphs too large")
+    nodelist_G1 = list(range(N_G1))
+    nodelist_G2 = list(range(N_G2))
+    for i in range(N_G1, 0, -1):
+        # Get all choose(N_G1, i) possible selections of [1... N_G1]
+        # print(i)
+        for subgraph_G1_nodelist in itertools.combinations(nodelist_G1, i):
+            subgraph_G1 = G1.subgraph(subgraph_G1_nodelist)
+            # Check whether subgraph_G1 is isomorphic to any subgraph of the same size in G2
+            for subgraph_G2_nodelist in itertools.combinations(nodelist_G2, i):
+                subgraph_G2 = G2.subgraph(subgraph_G2_nodelist)
+                if nx.is_isomorphic(subgraph_G1, subgraph_G2):
+                    return nx.Graph(subgraph_G1)

@@ -319,7 +319,8 @@ class Database:
                             # Check there is at least one item in the list for all coms.
                             partition['data'].index(i + 1)
                     except ValueError:
-                        raise IOError('partition invalid: gaps found in labelling')
+                        raise IOError(
+                            'partition invalid: gaps found in labelling')
                 # if a nested list
                 elif all(isinstance(i, list) for i in partition['data']):
                     for column in partition['data']:
@@ -329,7 +330,8 @@ class Database:
                                 # Check there is at least one item in the list for all coms.
                                 column.index(j + 1)
                         except ValueError:
-                            raise IOError('partition invalid: gaps found in labelling')
+                            raise IOError(
+                                'partition invalid: gaps found in labelling')
 
     def getNumberOfDocuments(self):
         """Return the total number of documents in the collection."""
@@ -353,7 +355,8 @@ class Database:
         if (edgelist['hydrogenstatus'] != "noH" and
                 edgelist['hydrogenstatus'] != "Hatoms" and
                 edgelist['hydrogenstatus'] != "Hbonds"):
-            raise IOError("hydrogenstatus must be either 'noH', 'Hatoms' or 'Hbonds'")
+            raise IOError(
+                "hydrogenstatus must be either 'noH', 'Hatoms' or 'Hbonds'")
         # Validate scaling:
         if type(edgelist['scaling']) != float or edgelist['scaling'] < 0.0:
             raise IOError("scaling must be a non-negative float")
@@ -449,3 +452,14 @@ class Database:
 
             result = self.collection.insert_one(supernetwork)
             return result.inserted_id
+
+    def extractAllSuperNetworks(self, pdbref=None):
+        """Extract all supernetworks, except the one specified by pdbref."""
+        query = {
+            "pdbref": {
+                "$ne": pdbref
+            },
+            "doctype": "supernetwork",
+        }
+        cursor = self.collection.find(query)
+        return cursor

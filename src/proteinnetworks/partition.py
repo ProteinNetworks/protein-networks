@@ -61,7 +61,7 @@ class Partition:
         if doc:
             self.data = doc['data']
             self.partitionid = doc['_id']
-            print("partition found")
+            # print("partition found")
         else:
             print("no partition fitting those parameters found: generating")
 
