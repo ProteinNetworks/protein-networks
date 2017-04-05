@@ -158,7 +158,7 @@ class SuperNetwork:
         # Generate the NetworkX graph for the supernetwork
         G = nx.Graph()
         for i, j, weight in self.data:
-            G.add_edge(i, j, weight=weight)
+            G.add_edge(i, j)
 
         G = nx.convert_node_labels_to_integers(G)
         # Get a cursor for all supernetworks in the database
@@ -171,7 +171,7 @@ class SuperNetwork:
         for protein in proteins:
             G2 = nx.Graph()
             for i, j, weight in protein['data']:
-                G2.add_edge(i, j, weight=weight)
+                G2.add_edge(i, j)
 
             G2 = nx.convert_node_labels_to_integers(G2)
             # Get the maximum common subgraph for the two supernetworks
@@ -179,12 +179,15 @@ class SuperNetwork:
                 MCS = getMCS(G, G2)
             except ValueError:
                 continue
-                similarity = 1 - MCS.number_of_nodes() / (max(
+            if MCS:
+                similarity = MCS.number_of_nodes() / (max(
                     G.number_of_nodes(), G2.number_of_nodes()))
+            else:
+                similarity = 0
 
-                if similarity > 0.5:
-                    weakIsomorphs.append(
-                        [self.pdbref, protein['pdbref'], similarity])
+            if similarity > 0.5:
+                weakIsomorphs.append(
+                    [self.pdbref, protein['pdbref'], str(similarity)])
 
         return weakIsomorphs
 
@@ -243,8 +246,8 @@ def getMCS(G1, G2):
 
     N_G1 = G1.number_of_nodes()
     N_G2 = G2.number_of_nodes()
-    if N_G1 > 30:
-        raise ValueError("Graphs too large")
+    if N_G2 > 25:
+        raise ValueError("Graph is too large")
     nodelist_G1 = list(range(N_G1))
     nodelist_G2 = list(range(N_G2))
     for i in range(N_G1, 0, -1):

@@ -14,7 +14,7 @@ if os.path.exists("weaklyIsomorphicProteins.dat"):
     with open("weaklyIsomorphicProteins.dat") as flines:
         isomorphicPairs = [line.strip().split(" ") for line in flines]
 else:
-    isomorphicPairs = [[]]
+    isomorphicPairs = []
 try:
     for supernetwork in tqdm(supernetworks):
         match = False
@@ -31,9 +31,11 @@ try:
 
         # [[pdb1, pdb2, simscore], [pdb1, pdb3, simscore]]
         isomorphs = supernetwork.getWeakIsomorphs(supernetworks)
-        isomorphicPairs.append(isomorphs)
+        isomorphicPairs += isomorphs
     with open("weaklyIsomorphicProteins.dat", mode='w') as flines:
-        flines.write("\n".join(" ".join(x) for x in isomorphicPairs if x))
+        flines.write("\n".join(" ".join(map(str, x)) for x in isomorphicPairs if x))
 except KeyboardInterrupt:
     with open("weaklyIsomorphicProteins.dat", mode='w') as flines:
-        flines.write("\n".join(" ".join(x) for x in isomorphicPairs if x))
+        print("\n".join(" ".join(map(str, x)) for x in isomorphicPairs if x))
+
+        # flines.write("\n".join(" ".join(map(str, x)) for x in isomorphicPairs if x))
