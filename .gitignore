@@ -2,6 +2,8 @@
 .*.swp
 *.png
 *.dat
+*.pdb
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
