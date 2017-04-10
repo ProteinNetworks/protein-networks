@@ -236,6 +236,104 @@ def getModifiedJaccard(expectedArray, generatedArray):
     return np.mean(jaccards)
 
 
+def getZScore(expectedArray, generatedArray, numTrials=100):
+    """
+    Get the z-score.
+
+    Defined as: z = (J - mu ) / sigma . Find mu and sigma by generating
+    null models.
+    """
+    J = getModifiedJaccard(expectedArray, generatedArray)
+
+    nullJaccard = []
+    for i in range(numTrials):
+        nullmodel = generateNullModel(generatedArray)
+        nullJaccard.append(getModifiedJaccard(expectedArray, nullmodel))
+
+    mu = np.mean(nullJaccard)
+    sigma = np.std(nullJaccard)
+    return (J - mu) / sigma
+
+
+def generateNullModel(testPartition):
+    """
+    From a given partition, generate a null model.
+
+    Here the null model has the same number of boundaries as the generated partition, but with
+    the boundaries arbitrarily placed (and the same number of communities in total.)
+    """
+    # Get the total number of communities in the partition
+    numCommunities = len(set(testPartition))
+    # Get the number of boundaries
+    prevI = -1
+    numBoundaries = -1  # Start from -1 to avoid counting the start as a boundary
+    for i in testPartition:
+        if i != prevI:
+            numBoundaries += 1
+        prevI = i
+
+    # Place the boundaries arbitrarily, and assign each segment to a randomly chosen community
+    newBoundaries = []
+    for i in range(numBoundaries):
+        randint = np.random.randint(low=1, high=len(testPartition))
+        while randint in newBoundaries:
+            randint = np.random.randint(low=1, high=len(testPartition))
+        newBoundaries.append(randint)
+    newBoundaries.sort()
+    newBoundaries = [0] + newBoundaries + [len(testPartition) - 1]
+    # Fill the gaps with communities in the range 1... numComs.
+
+    # We want to randomly assign, but ensure the same number of communities.
+    # So assign minimum number of communities, then add to reach quota.
+    # FIXME this currently sometimes hangs forever, if e.g [1, 2, 1, 1]
+    # FIXME then no way of subsequently shuffling to make it work
+
+    newCommunities = [i + 1 for i in range(numCommunities)]
+    while len(newCommunities) != len(newBoundaries) - 1:
+        newCommunities.append(np.random.randint(numCommunities) + 1)
+
+    # Shuffle until no two numbers are together
+    np.random.shuffle(newCommunities)
+    valid = False
+    counter = 0
+    while not valid:
+        counter += 1
+        if counter == 10:
+            # FIXME dirty hack to break out of "too-many-repeats" problem case.
+            newCommunities = [i + 1 for i in range(numCommunities)]
+            while len(newCommunities) != len(newBoundaries) - 1:
+                newCommunities.append(np.random.randint(numCommunities) + 1)
+            counter = 0
+        valid = True
+        np.random.shuffle(newCommunities)
+        for i in range(len(newCommunities) - 1):
+            if newCommunities[i] == newCommunities[i + 1]:
+                valid = False
+
+    nullModel = np.zeros(len(testPartition), dtype=int)
+    for i in range(len(newBoundaries) - 1):
+        nullModel[newBoundaries[i]:newBoundaries[i + 1] + 1] = newCommunities[i]
+
+    # Check the null model
+    # Get the number of boundaries
+    prevI = -1
+    nullModelNumBoundaries = -1  # Start from -1 to avoid counting the start as a boundary
+    for i in nullModel:
+        if i != prevI:
+            nullModelNumBoundaries += 1
+        prevI = i
+    assert set(nullModel) == set(testPartition)
+    assert len(nullModel) == len(testPartition)
+    if nullModelNumBoundaries != numBoundaries:
+        print(newBoundaries)
+        print(newCommunities)
+        print(testPartition.tolist())
+        print()
+        print(nullModel.tolist())
+        raise NotImplementedError
+    return nullModel
+
+
 def getMCS(G1, G2):
     """Take two networkx graphs, return the MCS as a networkx graph."""
     # Let G1 be the smaller graph
@@ -246,7 +344,7 @@ def getMCS(G1, G2):
 
     N_G1 = G1.number_of_nodes()
     N_G2 = G2.number_of_nodes()
-    if N_G2 > 25:
+    if N_G2 > 35:
         raise ValueError("Graph is too large")
     nodelist_G1 = list(range(N_G1))
     nodelist_G2 = list(range(N_G2))

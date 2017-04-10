@@ -9,14 +9,14 @@ db = proteinnetworks.database.Database()
 
 supernetworks = db.collection.find({"doctype": "supernetwork"})
 supernetworks = list(supernetworks)
-supernetworks = np.random.choice(np.asarray(supernetworks), size=100, replace=False)
+supernetworks = np.random.choice(np.asarray(supernetworks), size=1000, replace=False)
 if os.path.exists("weaklyIsomorphicProteins.dat"):
     with open("weaklyIsomorphicProteins.dat") as flines:
         isomorphicPairs = [line.strip().split(" ") for line in flines]
 else:
     isomorphicPairs = []
 try:
-    for supernetwork in tqdm(supernetworks):
+    for supernetwork in supernetworks:
         match = False
         # Check whether the protein has already been assigned a class
         for isomorphicPair in isomorphicPairs:
@@ -36,6 +36,6 @@ try:
         flines.write("\n".join(" ".join(map(str, x)) for x in isomorphicPairs if x))
 except KeyboardInterrupt:
     with open("weaklyIsomorphicProteins.dat", mode='w') as flines:
-        print("\n".join(" ".join(map(str, x)) for x in isomorphicPairs if x))
+        flines.write("\n".join(" ".join(map(str, x)) for x in isomorphicPairs if x))
 
         # flines.write("\n".join(" ".join(map(str, x)) for x in isomorphicPairs if x))
