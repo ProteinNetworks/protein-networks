@@ -3,6 +3,7 @@
 *.png
 *.dat
 *.pdb
+*.tsv
 
 
 # Byte-compiled / optimized / DLL files
