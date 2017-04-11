@@ -17,6 +17,6 @@ setup(
     license=license,
     setup_requires=['pytest_runner'],
     tests_require=['pytest'],
-    packages=find_packages("src", exclude=('tests')),
+    packages=find_packages("src", exclude=('tests', 'examples','htmlcov')),
     package_dir={'': 'src'}
 )

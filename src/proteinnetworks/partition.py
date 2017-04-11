@@ -198,6 +198,80 @@ class Partition:
             counter += 1
         return expectedDomains
 
+    def plotPymolStructure(self):
+        """Plot the community structure overlaid onto the protein using PyMol.
+
+        Generate the sequence of b-factor alterations for each level.
+        Each column of the input Array alters a Pymol Object of the form
+        $PDBREF_$INDEX where the pdbref is the 4-character identifier, and index the
+        column number (starting from zeros)
+        """
+        pymolCommands = []
+
+        # Work out whether the given edgelist is contact or atomic
+        edgelisttype = self.database.extractDocumentGivenId(self.edgelistid)['edgelisttype']
+        if edgelisttype == "residue":
+            selector = "resi"
+        elif edgelisttype == "atomic":
+            selector = "index"
+        for i, col in enumerate(self.data):
+            numberOfCommunities = len(set(col))
+            col = np.asarray(col, dtype=int)  # necessary for np.where()
+            pymolCommand = "\n".join([
+                "alter {0}_{1} and ({2} {3} ), b={4}".format(
+                    self.pdbref, i, selector,
+                    " or {} ".format(selector).join(str(x + 1) for x in np.where(col == com)[0]),
+                    com / numberOfCommunities) for com in set(col)
+            ])
+            pymolCommands.append(pymolCommand)
+        """
+        Amalgamate the pymol commands so as to load a pdb file for each level of hierarchy,
+        then run the bfactor alterations.
+        """
+        # Write the pdb file out as a temp file for PyMol FIXME
+        pdb = self.database.extractPDBFile(self.pdbref)
+        if not pdb:
+            pdb = self.database.fetchPDBFileFromWeb(self.pdbref)
+        with open("temp.pdb", mode='w') as flines:
+            flines.write("\n".join(pdb))
+
+        pymolScript = "\n".join([
+            "load temp.pdb, {0}_{1}".format(self.pdbref, i)
+            for i in range(len(pymolCommands))
+        ])
+        pymolScript += "\n"
+        pymolScript += "\n".join(pymolCommands)
+        pymolScript += """
+#formatting
+bg_color white
+hide all
+#show sticks
+show cartoon
+spectrum b, rainbow,  minimum=0, maximum=1
+set opaque_background=0
+set antialias = on
+set line_smooth = 1
+set depth_cue = 1
+set specular = 1
+set surface_quality = 1
+set stick_quality = 15
+set sphere_quality = 2
+set ray_trace_fog = 0.8
+set light = (-0.2,0,-1)
+
+set ray_shadows, 0
+set surface_mode, 1
+set cartoon_side_chain_helper,on
+rebuild
+        """
+
+        with open("temp.pml", mode='w') as flines:
+            flines.write(pymolScript)
+
+        subprocess.run(["pymol", "temp.pml"])
+        os.remove("temp.pml")
+        os.remove("temp.pdb")
+
 
 def treeFileToNestedLists(inputTreeFile):
     """
