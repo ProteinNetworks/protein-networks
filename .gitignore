@@ -4,6 +4,7 @@
 *.dat
 *.pdb
 *.tsv
+*.json
 
 
 # Byte-compiled / optimized / DLL files
