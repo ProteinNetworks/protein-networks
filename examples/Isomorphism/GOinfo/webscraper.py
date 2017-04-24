@@ -27,7 +27,7 @@ try:
 
         url = "http://amigo.geneontology.org/amigo/term/{}".format(GOterm[1])
         browser.get(url)
-        time.sleep(0.5)
+        time.sleep(0.1)
         try:
 
             data = browser.find_element_by_xpath("/html/body/div[2]/div[2]/div[2]/dl/dd[2]").text
@@ -39,7 +39,7 @@ try:
         GOtermWithAnnotation.append(GOterm)
 
     with open("GOtermswithannotation.dat", mode='w') as flines:
-        flines.write("\n".join(" ".join(x)) for x in GOtermWithAnnotation)
+        flines.write("\n".join([" ".join(x) for x in GOtermWithAnnotation]))
 
 except KeyboardInterrupt:
     with open("GOtermswithannotation.dat", mode='w') as flines:
