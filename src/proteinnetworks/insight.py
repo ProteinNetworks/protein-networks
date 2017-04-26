@@ -12,6 +12,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import warnings
 import itertools
+import math
 from .partition import Partition
 
 
@@ -358,3 +359,65 @@ def getMCS(G1, G2):
                 subgraph_G2 = G2.subgraph(subgraph_G2_nodelist)
                 if nx.is_isomorphic(subgraph_G1, subgraph_G2):
                     return nx.Graph(subgraph_G1)
+
+
+def getShannonEntropy(partition):
+    """
+    H(A) = - sum_i ( n_i/N * log(n_i/N).
+
+    Here n_i is the number of nodes in community i, and N the total number of nodes.
+    """
+    N = len(partition)
+    H = 0
+    totalComNumber = len(set(partition))
+    comSize = np.zeros(totalComNumber, dtype=int)
+    for i in range(1, totalComNumber + 1):
+        for j in range(0, N):
+            if partition[j] == i:
+                comSize[i - 1] += 1
+    logComSize = np.log(comSize / N)
+    for i in range(0, totalComNumber):
+        H -= comSize[i] / N * logComSize[i]
+    return H
+
+
+def getMutualInfo(generated, expected):
+    """
+    Get the Mutual Information.
+
+    I(A,B) = = sum_i sum_j n_ij / N * log ( n_ij N / n_i n_j ).
+    Here n_ij is the number of nodes of community i in partition A that are
+    in community j of partition B.
+
+    Refs:   Ronhovde, P. & Nussinov, Z.
+                Multiresolution community detection for megascale networks
+                by information-based replica correlations.
+                Phys. Rev. E 80, 016109 (2009)
+    """
+    N1 = len(generated)
+    N2 = len(expected)
+    assert N1 == N2
+    comNumber1 = len(set(generated))
+    comNumber2 = len(set(expected))
+    confusionmatrix = np.zeros((comNumber1, comNumber2), dtype=int)
+    for i in range(N1):
+        confusionmatrix[generated[i] - 1, expected[i] - 1] += 1
+    rowsums = np.sum(confusionmatrix, axis=1)
+    colsums = np.sum(confusionmatrix, axis=0)
+
+    mutualinfo = 0
+    for i in range(0, comNumber1):
+        for j in range(0, comNumber2):
+            if confusionmatrix[i, j] != 0:
+                mutualinfo += confusionmatrix[i, j] / N1 * math.log(
+                    confusionmatrix[i, j] * N1 / (rowsums[i] * colsums[j]))
+    return mutualinfo
+
+
+def getNMI(partitionA, partitionB):
+    """Given two partitions, return the NMI."""
+    HA = getShannonEntropy(partitionA)
+    mutualinfo = getMutualInfo(partitionA, partitionB)
+    HB = getShannonEntropy(partitionB)
+    NMI = 2 * mutualinfo / (HA + HB)
+    return NMI
