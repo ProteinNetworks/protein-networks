@@ -1,13 +1,11 @@
-#!/usr/bin/env python3
-"""
-Get the Eigenvector Similarity for two weighted edgelists
-"""
+"""Get the Eigenvector Similarity for two weighted edgelists."""
 
 import proteinnetworks
 import networkx as nx
 
 
 def select_k(spectrum, minimum_energy=0.9):
+    """Do something mysterious to do with spectra."""
     running_total = 0.0
     total = sum(spectrum)
     if total == 0.0:
@@ -21,7 +19,7 @@ def select_k(spectrum, minimum_energy=0.9):
 
 db = proteinnetworks.database.Database()
 
-with open("weaklyIsomorphicProteins2.dat") as flines:
+with open("weaklyIsomorphicProteins.dat") as flines:
     weakIsomorphs = [line.strip().split(" ") for line in flines]
 
 
@@ -48,5 +46,5 @@ for pdb1, pdb2, simscore1 in weakIsomorphs:
     similarities.append([pdb1, pdb2, simscore1, similarity])
 
 
-with open("simscorecomparison.dat", mode='w') as flines:
+with open("weaklyIsomorphicProteinsWithSimScore.dat", mode='w') as flines:
     flines.write("\n".join(" ".join(map(str, x)) for x in similarities if x))
