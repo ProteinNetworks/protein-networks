@@ -2,6 +2,8 @@ var width = document.getElementById('networks').clientWidth,
     height = document.getElementById('networks').clientHeight;
 var width2 = document.getElementById('networkfocus').clientWidth,
     height2 = document.getElementById('networkfocus').clientHeight;
+var width3 = document.getElementById('networktable').clientWidth,
+    height3 = document.getElementById('networktable').clientHeight;
 
 
 
@@ -23,6 +25,13 @@ var svg = d3.select("#networks").append("svg")
 var svg2 = d3.select("#networkfocus").append("svg")
     .attr("width", width2)
     .attr("height", height2)
+    .style("margin", "auto")
+    .style("display", "block");
+
+
+var table = d3.select("#networktable").append("table")
+    .attr("width", width3)
+    .attr("height", height3)
     .style("margin", "auto")
     .style("display", "block");
 
@@ -55,15 +64,10 @@ d3.json("d3/GOtermsD3.json", function(error, graph) {
     var isoGroup = d.group;
     console.log("Isomorphism Class:", isoGroup);
     svg2.selectAll("*").remove();
+    table.selectAll("*").remove();
+        
     renderGraph(isoGroup);
-//    node.style("fill", function(e) {
-  //     if (e.group === isoGroup) {
-    //    return color(d.group);
-    //   }
-   //   else {
-   //     return color(d3.rgb("white"));
-  //   }
-//  });
+    renderTable(isoGroup);
   };
   
 
@@ -87,19 +91,60 @@ d3.json("d3/GOtermsD3.json", function(error, graph) {
         .attr("x2", function(d) { return d.target.x; })
         .attr("y2", function(d) { return d.target.y; });
 
-    node.attr("cx", function(d) { return d.x; }) //return Math.max(radius, Math.min(width - radius, d.x));})
-        .attr("cy", function(d) { return d.y; }); //return Math.max(radius, Math.min(height - radius, d.y));});
+    node.attr("cx", function(d) { return d.x; })
+        .attr("cy", function(d) { return d.y; });
   });
 });
 
 
-function renderGraph(d) {
+function renderTable(isoGroup) {
+// Given an isomorphism group label, pull the corresponding "data" field and plot as a table.
+
+   var tableData = globalgraph.data.filter(function(entry) {return entry.group === isoGroup;});
+
+   console.log(tableData);
+
+   var columns = ["PDBs", "GO terms"]
+        thead = table.append("thead"),
+        tbody = table.append("tbody");
+
+    // append the header row
+    thead.append("tr")
+        .selectAll("th")
+        .data(columns)
+        .enter()
+        .append("th")
+            .text(function(column) { return column; });
+
+    // create a row for each object in the data
+    var rows = tbody.selectAll("tr")
+        .data(tableData)
+        .enter()
+        .append("tr");
+
+    // create a cell in each row for each column
+    var cells = rows.selectAll("td")
+        .data(function(row) {
+            return columns.map(function(column) {
+                return {column: column, value: row[column]};
+            });
+        })
+        .enter()
+        .append("td")
+        .attr("style", "font-family: Courier") // sets the font style
+            .html(function(d) { return d.value; });
+
+};
+
+
+
+function renderGraph(isoGroup) {
 // Given an isomorphism group label, identify the nodes and links corresponding to that group.
 // Then render.
-  var subnodes = globalgraph.nodes.filter(function(entry) { return entry.group === d;});
+  var subnodes = globalgraph.nodes.filter(function(entry) { return entry.group === isoGroup;});
 
   var sublinks = globalgraph.links.filter(function(entry) {
-    return entry.source.group === d;      
+    return entry.source.group === isoGroup;      
   });        
 
 
