@@ -2,6 +2,7 @@
 #
 import graph_tool
 import graph_tool.inference
+import os
 import proteinnetworks
 
 db = proteinnetworks.database.Database()
@@ -15,6 +16,8 @@ edgelists = db.collection.find({
 for edgelist in edgelists:
     edgelistFilename = "Data/{}.{}.dat".format(edgelist['pdbref'],
                                                edgelist['scaling'])
+    if os.path.exists(edgelistFilename):
+        continue
     with open(edgelistFilename, mode='w') as flines:
         flines.write(
             "\n".join(" ".join(map(str, x)) for x in edgelist['data']))

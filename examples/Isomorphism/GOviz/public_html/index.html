@@ -1,0 +1,73 @@
+<meta charset="UTF-8">
+
+<style>
+#mainsvg .node {
+  stroke: #fff
+  stroke-width: 1.5px;
+}
+
+#mainsvg .link {
+  stroke: #999;
+  stroke-opacity: .6;
+}
+
+#mainsvg {
+  border: 2px solid #708090;
+  height: 800px;
+}
+
+#networks {
+  width: 80%;
+  float: left;
+  height: 100%;
+}
+#networkfocus {
+  width: 15%;
+  float: left;
+  height: 100%;
+}
+}
+      
+</style>
+
+<!--#include virtual="/includes/head_personal.html" -->
+
+<title>TCM: Will Grant</title>
+
+<!--#include virtual="/includes/menu_personal.html" -->
+
+<h1>Will Grant</h1>
+
+<h2>Classification of Proteins Using Network Analysis</h2>
+<p>
+Using community detection we can identify modules within proteins.
+The arrangement of these modules is hypothesised to be characteristic
+of the protein's structure. Here proteins are classified according
+to the arrangement of their modules.
+</p>
+
+<div id='mainsvg'>
+<div id='networks'></div>
+<div id='networkfocus'></div>
+</div>
+
+<!-- <h2>Example D3 Viz</h2>
+
+<h3>Community structure of the Zachary's Karate Club network</h3>
+<div id="karate"></div>
+
+<h3>Dendrogram detailing the research interests of the Materials department</h3>
+<div id="dendro"></div>
+-->
+<script src="d3/d3.min.js" charset="utf-8"></script>
+<script src="d3/goterms.js" charset="utf-8"></script>  
+<!--
+<script src="d3/karate.js" charset="utf-8"></script>  
+<script src="d3/dendro.js" charset="utf-8"></script>
+-->
+
+<!--#include virtual="/includes/footer1_personal.html" -->
+
+<!-- <p>Last Edited: 04/10/16</p>
+-->
+<!--#include virtual="/includes/footer2_personal.html" -->
