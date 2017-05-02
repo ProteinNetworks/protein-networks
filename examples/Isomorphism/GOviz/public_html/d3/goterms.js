@@ -4,6 +4,8 @@ var width2 = document.getElementById('networkfocus').clientWidth,
     height2 = document.getElementById('networkfocus').clientHeight;
 var width3 = document.getElementById('networktable').clientWidth,
     height3 = document.getElementById('networktable').clientHeight;
+var width4 = document.getElementById('networktable2').clientWidth,
+    height4 = document.getElementById('networktable2').clientHeight;
 
 
 
@@ -29,9 +31,15 @@ var svg2 = d3.select("#networkfocus").append("svg")
     .style("display", "block");
 
 
-var table = d3.select("#networktable").append("table")
+var PDBtable = d3.select("#networktable").append("table")
     .attr("width", width3)
     .attr("height", height3)
+    .style("margin", "auto")
+    .style("display", "block");
+
+var GOtable = d3.select("#networktable2").append("table")
+    .attr("width", width4)
+    .attr("height", height4)
     .style("margin", "auto")
     .style("display", "block");
 
@@ -64,7 +72,8 @@ d3.json("d3/GOtermsD3.json", function(error, graph) {
     var isoGroup = d.group;
     console.log("Isomorphism Class:", isoGroup);
     svg2.selectAll("*").remove();
-    table.selectAll("*").remove();
+    PDBtable.selectAll("*").remove();
+    GOtable.selectAll("*").remove();
         
     renderGraph(isoGroup);
     renderTable(isoGroup);
@@ -100,39 +109,40 @@ d3.json("d3/GOtermsD3.json", function(error, graph) {
 function renderTable(isoGroup) {
 // Given an isomorphism group label, pull the corresponding "data" field and plot as a table.
 
-   var tableData = globalgraph.data.filter(function(entry) {return entry.group === isoGroup;});
+   var tableData = globalgraph.data.filter(function(entry) {return entry.group === isoGroup;})[0];
 
    console.log(tableData);
 
-   var columns = ["PDBs", "GO terms"]
-        thead = table.append("thead"),
-        tbody = table.append("tbody");
+   var  thead = PDBtable.append("thead"),
+        tbody = PDBtable.append("tbody");
 
     // append the header row
     thead.append("tr")
-        .selectAll("th")
-        .data(columns)
-        .enter()
         .append("th")
-            .text(function(column) { return column; });
+            .text("PDBs");
 
     // create a row for each object in the data
     var rows = tbody.selectAll("tr")
-        .data(tableData)
+        .data(tableData.PDBs)
         .enter()
-        .append("tr");
-
-    // create a cell in each row for each column
-    var cells = rows.selectAll("td")
-        .data(function(row) {
-            return columns.map(function(column) {
-                return {column: column, value: row[column]};
-            });
-        })
-        .enter()
+        .append("tr")
         .append("td")
-        .attr("style", "font-family: Courier") // sets the font style
-            .html(function(d) { return d.value; });
+        .text(function(d) {return d;});
+
+   // Now sort the GO data
+   var thead = GOtable.append("thead").selectAll("th")
+                      .data(d3.keys(tableData.GOterms[0]))
+                      .enter().append("th").text(function(d){return d});
+// fill the table
+// create rows
+var tr = GOtable.append("tbody").selectAll("tr")
+               .data(tableData.GOterms).enter().append("tr")
+// cells
+var td = tr.selectAll("td")
+  .data(function(d){return d3.values(d)})
+  .enter().append("td")
+  .text(function(d) {return d})
+
 
 };
 
