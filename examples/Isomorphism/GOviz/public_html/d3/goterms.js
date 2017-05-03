@@ -34,12 +34,14 @@ var svg2 = d3.select("#networkfocus").append("svg")
 var PDBtable = d3.select("#networktable").append("table")
     .attr("width", width3)
     .attr("height", height3)
+    .attr("class", "table table-striped")
     .style("margin", "auto")
     .style("display", "block");
 
 var GOtable = d3.select("#networktable2").append("table")
     .attr("width", width4)
     .attr("height", "auto")
+    .attr("class", "table table-striped")
     .style("margin", "auto")
     .style("display", "block");
 
@@ -81,7 +83,18 @@ d3.json("d3/GOtermsD3.json", function(error, graph) {
   
 
 
-  node.attr("r", radius)
+  node.attr("r", function(d) {
+      var numPDBs = graph.data.filter(function(entry) {return entry.group === d.group;})[0].PDBs.length;
+      if (numPDBs < 10) {
+        return 3;
+      }
+      else if (numPDBs < 100) {
+        return 5;
+      }
+      else {
+        return 7;
+      }
+      })
       .style("fill", function(d) { return color(d.group); });
       //.call(force.drag);
   resize();
@@ -111,7 +124,6 @@ function renderTable(isoGroup) {
 
    var tableData = globalgraph.data.filter(function(entry) {return entry.group === isoGroup;})[0];
 
-   console.log(tableData);
 
    var  thead = PDBtable.append("thead"),
         tbody = PDBtable.append("tbody");
