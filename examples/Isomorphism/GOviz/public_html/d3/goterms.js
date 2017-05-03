@@ -2,6 +2,10 @@ var width = document.getElementById('networks').clientWidth,
     height = document.getElementById('networks').clientHeight;
 var width2 = document.getElementById('networkfocus').clientWidth,
     height2 = document.getElementById('networkfocus').clientHeight;
+var width3 = document.getElementById('networktable').clientWidth,
+    height3 = document.getElementById('networktable').clientHeight;
+var width4 = document.getElementById('networktable2').clientWidth,
+    height4 = document.getElementById('networktable2').clientHeight;
 
 
 
@@ -23,6 +27,19 @@ var svg = d3.select("#networks").append("svg")
 var svg2 = d3.select("#networkfocus").append("svg")
     .attr("width", width2)
     .attr("height", height2)
+    .style("margin", "auto")
+    .style("display", "block");
+
+
+var PDBtable = d3.select("#networktable").append("table")
+    .attr("width", width3)
+    .attr("height", height3)
+    .style("margin", "auto")
+    .style("display", "block");
+
+var GOtable = d3.select("#networktable2").append("table")
+    .attr("width", width4)
+    .attr("height", "auto")
     .style("margin", "auto")
     .style("display", "block");
 
@@ -55,15 +72,11 @@ d3.json("d3/GOtermsD3.json", function(error, graph) {
     var isoGroup = d.group;
     console.log("Isomorphism Class:", isoGroup);
     svg2.selectAll("*").remove();
+    PDBtable.selectAll("*").remove();
+    GOtable.selectAll("*").remove();
+        
     renderGraph(isoGroup);
-//    node.style("fill", function(e) {
-  //     if (e.group === isoGroup) {
-    //    return color(d.group);
-    //   }
-   //   else {
-   //     return color(d3.rgb("white"));
-  //   }
-//  });
+    renderTable(isoGroup);
   };
   
 
@@ -87,19 +100,61 @@ d3.json("d3/GOtermsD3.json", function(error, graph) {
         .attr("x2", function(d) { return d.target.x; })
         .attr("y2", function(d) { return d.target.y; });
 
-    node.attr("cx", function(d) { return d.x; }) //return Math.max(radius, Math.min(width - radius, d.x));})
-        .attr("cy", function(d) { return d.y; }); //return Math.max(radius, Math.min(height - radius, d.y));});
+    node.attr("cx", function(d) { return d.x; })
+        .attr("cy", function(d) { return d.y; });
   });
 });
 
 
-function renderGraph(d) {
+function renderTable(isoGroup) {
+// Given an isomorphism group label, pull the corresponding "data" field and plot as a table.
+
+   var tableData = globalgraph.data.filter(function(entry) {return entry.group === isoGroup;})[0];
+
+   console.log(tableData);
+
+   var  thead = PDBtable.append("thead"),
+        tbody = PDBtable.append("tbody");
+
+    // append the header row
+    thead.append("tr")
+        .append("th")
+            .text("PDBs");
+
+    // create a row for each object in the data
+    var rows = tbody.selectAll("tr")
+        .data(tableData.PDBs)
+        .enter()
+        .append("tr")
+        .append("td")
+        .text(function(d) {return d;});
+
+   // Now sort the GO data
+   var thead = GOtable.append("thead").selectAll("th")
+                      .data(d3.keys(tableData.GOterms[0]))
+                      .enter().append("th").text(function(d){return d});
+// fill the table
+// create rows
+var tr = GOtable.append("tbody").selectAll("tr")
+               .data(tableData.GOterms).enter().append("tr")
+// cells
+var td = tr.selectAll("td")
+  .data(function(d){return d3.values(d)})
+  .enter().append("td")
+  .text(function(d) {return d})
+
+
+};
+
+
+
+function renderGraph(isoGroup) {
 // Given an isomorphism group label, identify the nodes and links corresponding to that group.
 // Then render.
-  var subnodes = globalgraph.nodes.filter(function(entry) { return entry.group === d;});
+  var subnodes = globalgraph.nodes.filter(function(entry) { return entry.group === isoGroup;});
 
   var sublinks = globalgraph.links.filter(function(entry) {
-    return entry.source.group === d;      
+    return entry.source.group === isoGroup;      
   });        
 
 

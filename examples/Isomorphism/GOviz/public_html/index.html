@@ -13,21 +13,35 @@
 
 #mainsvg {
   border: 2px solid #708090;
-  height: 800px;
+  min-height: 800px;
+  height: auto;
+  overflow: auto;
 }
 
 #networks {
-  width: 80%;
+  width:80%;
   float: left;
-  height: 100%;
+  height: 600px;
 }
 #networkfocus {
-  width: 15%;
+  width: 19%;
   float: left;
-  height: 100%;
+  height: 600px;
 }
+
+#networktable {
+  width: 20%;
+  float: left;
+  height: auto;
+  min-height: 100px;
 }
-      
+
+#networktable2 {
+  float: left;
+  width: 79% ;
+  height: auto;
+  min-height: 100px;
+}
 </style>
 
 <!--#include virtual="/includes/head_personal.html" -->
@@ -49,6 +63,8 @@ to the arrangement of their modules.
 <div id='mainsvg'>
 <div id='networks'></div>
 <div id='networkfocus'></div>
+<div id='networktable'></div>
+<div id='networktable2'></div>
 </div>
 
 <!-- <h2>Example D3 Viz</h2>
