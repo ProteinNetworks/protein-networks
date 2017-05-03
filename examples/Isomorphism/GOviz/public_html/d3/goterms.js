@@ -139,7 +139,7 @@ function renderTable(isoGroup) {
         .enter()
         .append("tr")
         .append("td")
-        .text(function(d) {return d;});
+        .html(function(d) {return "<a href=http://www.rcsb.org/pdb/ngl/ngl.do?pdbid=" + d + "\>" + d + "</a>"; });
 
    // Now sort the GO data
    var thead = GOtable.append("thead").selectAll("th")
