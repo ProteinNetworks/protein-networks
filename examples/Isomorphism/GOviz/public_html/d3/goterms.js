@@ -35,19 +35,19 @@ var PDBtable = d3.select("#networktable").append("table")
     .attr("width", width3)
     .attr("height", height3)
     .attr("class", "table table-striped")
-    .style("margin", "auto")
-    .style("display", "block");
+    .style("margin", "auto");
+    //.style("display", "block");
 
 var GOtable = d3.select("#networktable2").append("table")
     .attr("width", width4)
     .attr("height", "auto")
     .attr("class", "table table-striped")
-    .style("margin", "auto")
-    .style("display", "block");
+    .style("margin", "auto");
+    //.style("display", "block");
 
 var globalgraph; // for use in generating the popups
 
-d3.json("d3/GOtermsD3.json", function(error, graph) {
+d3.json("d3/GOtermsD3WithNames.json", function(error, graph) {
   if (error) throw error;
 
   globalgraph = graph;
@@ -137,21 +137,31 @@ function renderTable(isoGroup) {
     var rows = tbody.selectAll("tr")
         .data(tableData.PDBs)
         .enter()
-        .append("tr")
         .append("td")
-        .html(function(d) {return "<a href=http://www.rcsb.org/pdb/ngl/ngl.do?pdbid=" + d + "\>" + d + "</a>"; });
-
+        // This html adds a link with the PDB reference as text, and linking to an NGL Viewer instance.
+        // The image is pulled from the RCSB and sized to give 5 pdbs per row.
+        .html(function(d) {
+                return "<a href=http://www.rcsb.org/pdb/ngl/ngl.do?pdbid=" + d + " target='_blank'\>" + d + "</a><br/>"
+                         + "<img src=http://www.rcsb.org/pdb/images/" + d + "_asym_r_500.jpg width=" + width/6 + " />";});
    // Now sort the GO data
+   var columnOrder = ["GO Label", "GO Name", "Corrected p value", "Unique"];
    var thead = GOtable.append("thead").selectAll("th")
-                      .data(d3.keys(tableData.GOterms[0]))
+                      .data(columnOrder) //d3.keys(tableData.GOterms[0]))
+                      //.data(function(d) {
+                     //   return columnOrder.map(function(m) { return d3.keys(tableData.GOterms[0]); });
+                     // })
                       .enter().append("th").text(function(d){return d});
+  console.log(d3.keys(tableData.GOterms[0]));
 // fill the table
+
 // create rows
 var tr = GOtable.append("tbody").selectAll("tr")
                .data(tableData.GOterms).enter().append("tr")
 // cells
 var td = tr.selectAll("td")
-  .data(function(d){return d3.values(d)})
+  .data(function(d){
+        return [d['GO Label'], d['GO Name'], d['Corrected p value'], d['Unique']] //columnOrder.map(function(m) {return d3.values(d)[m]})
+  })
   .enter().append("td")
   .text(function(d) {return d})
 
