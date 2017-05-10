@@ -14,6 +14,8 @@ import warnings
 import itertools
 import math
 from .partition import Partition
+from .network import Network
+from typing import List
 
 
 class SuperNetwork:
@@ -167,7 +169,8 @@ class SuperNetwork:
         if subset.any():
             proteins = subset
         else:
-            proteins = self.database.extractAllSuperNetworks(pdbref=self.pdbref)
+            proteins = self.database.extractAllSuperNetworks(
+                pdbref=self.pdbref)
         weakIsomorphs = []
         for protein in proteins:
             G2 = nx.Graph()
@@ -421,3 +424,82 @@ def getNMI(partitionA, partitionB):
     HB = getShannonEntropy(partitionB)
     NMI = 2 * mutualinfo / (HA + HB)
     return NMI
+
+
+def getConductance(network: Network, partition: Partition) -> List[float]:
+    """Given a Network and Partition, return a conductance for each level of the partition."""
+    generatedArray = partition.data
+    adjacency_matrix = network.getAdjacencyMatrix()
+
+    # NB this assumes labelling from 1 to m
+    conductances = []
+    for col in generatedArray:
+        conductance = [
+            calculateConductance(
+                np.where(np.asarray(
+                    col, dtype=int) == j + 1)[0],
+                adjacency_matrix) for j in range(len(set(col)))
+        ]
+        conductances.append(conductance)
+    return conductances
+
+
+def calculateConductance(node_subset, adjacency_matrix):
+    """
+    Return conductance given an adjacency matrix and a node_subset.
+
+    The node-subset is a 1D array with same dimension as the
+    adjacency matrix.
+    Conductance is defined for a subset S, and its complement Sbar :
+
+    C = sum_{i in S, j in Sbar} (a_{ij}) / min (a(S), a(Sbar))
+
+    where a is the adjacency matrix, and a(S) is sum_{i in S, j in V} a_ij
+    i.e. the total weight of edges indicent with S.
+    """
+    node_complement = [
+        i for i in range(len(adjacency_matrix)) if i not in node_subset
+    ]
+    numerator = 0
+    for i in node_subset:
+        for j in node_complement:
+            numerator += adjacency_matrix[i, j]
+
+    denominator_1 = 0
+    for i in node_subset:
+        for j in range(len(adjacency_matrix)):
+            denominator_1 += adjacency_matrix[i, j]
+
+    denominator_2 = 0
+    for i in node_complement:
+        for j in range(len(adjacency_matrix)):
+            denominator_2 += adjacency_matrix[i, j]
+
+    conductance = numerator / min(denominator_1, denominator_2)
+
+    return conductance
+
+
+def getModularity(network: Network, partition: Partition) -> List[float]:
+    r"""
+    Given a Network and Partition, return Newman's modularity for each level of the partition.
+
+    Q = 1/2w \sum_{i,j}( A_ij - A_i A _j / 2w  \delta( C_i, C_j))
+
+      = \sum_{s} (w_{ss}/w = (w_s/2w)**2)
+
+    """
+    generatedArray = np.atleast_2d(np.assary(partition.data, dtype=int))
+    adjacency_matrix = network.getAdjacencyMatrix()
+
+    # NB this assumes labelling from 1 to m
+    conductances = []
+    for col in generatedArray:
+        conductance = [
+            calculateConductance(
+                np.where(np.asarray(
+                    col, dtype=int) == j + 1)[0],
+                adjacency_matrix) for j in range(len(set(col)))
+        ]
+        conductances.append(conductance)
+    return conductances

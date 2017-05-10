@@ -10,7 +10,12 @@ from .atomicradii import atomicRadii
 class Network:
     """Holds a edgelist and its parameters, and offers network inspection methods."""
 
-    def __init__(self, pdbref, edgelisttype, hydrogenstatus, scaling, database=None):
+    def __init__(self,
+                 pdbref,
+                 edgelisttype,
+                 hydrogenstatus,
+                 scaling,
+                 database=None):
         """
         Initialise the edgelist with a given parameter set.
 
@@ -48,6 +53,18 @@ class Network:
             self.edgelist = edgelist
             self.edgelistid = self.database.depositEdgelist(
                 pdbref, edgelisttype, hydrogenstatus, scaling, edgelist)
+
+    def getAdjacencyMatrix(self):
+        """Return the adjacency matrix as a numpy array."""
+        n = max([max(i, j) for i, j, k in self.edgelist])
+        adj = np.zeros((n, n), dtype=int)
+
+        for edge in self.edgelist:
+            # NB this requires integer weights
+            i, j, weight = [int(x) for x in edge]
+            adj[i - 1, j - 1] += weight
+            adj[j - 1, i - 1] += weight
+        return adj
 
     def generateEdgelist(self, pdbref, edgelisttype, hydrogenstatus, scaling):
         r"""
