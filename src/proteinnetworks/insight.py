@@ -481,25 +481,39 @@ def calculateConductance(node_subset, adjacency_matrix):
 
 
 def getModularity(network: Network, partition: Partition) -> List[float]:
+    """Given a Network and Partition, return Newman's modularity for each level of the partition."""
+    generatedArray = np.atleast_2d(np.assary(partition.data, dtype=int))
+    adjacency_matrix = network.getAdjacencyMatrix()
+    # Calculate Q for each level
+    Qs = []
+    for col in generatedArray:
+
+        Q = calculateModularity(adjacency_matrix, col)
+        Qs.append(Q)
+    return Qs
+
+
+def calculateModularity(adj, comlist):
     r"""
-    Given a Network and Partition, return Newman's modularity for each level of the partition.
+    Given an adjacency matrix and a list of communities, return the modularity.
 
     Q = 1/2w \sum_{i,j}( A_ij - A_i A _j / 2w  \delta( C_i, C_j))
 
       = \sum_{s} (w_{ss}/w = (w_s/2w)**2)
-
     """
-    generatedArray = np.atleast_2d(np.assary(partition.data, dtype=int))
-    adjacency_matrix = network.getAdjacencyMatrix()
+    rowsums = np.sum(adj, axis=0)
+    N = len(adj)
+    inversestrength = 1 / np.sum(adj)
+    Q = 0.0
+    for i in range(0, N):
+        wi = rowsums[i]
+        pi = comlist[i]
+        for j in range(0, i):
+            wj = rowsums[j]
+            if pi == comlist[j]:  # if nodes i and j are in the same community
+                Q += (adj[i, j] - wi * wj * inversestrength)
 
-    # NB this assumes labelling from 1 to m
-    conductances = []
-    for col in generatedArray:
-        conductance = [
-            calculateConductance(
-                np.where(np.asarray(
-                    col, dtype=int) == j + 1)[0],
-                adjacency_matrix) for j in range(len(set(col)))
-        ]
-        conductances.append(conductance)
-    return conductances
+    ondiagonals = sum(
+        [adj[i, i] - (rowsums[i]**2) * inversestrength for i in range(N)])
+
+    return (Q * 2 + ondiagonals) * inversestrength
