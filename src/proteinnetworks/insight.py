@@ -482,7 +482,7 @@ def calculateConductance(node_subset, adjacency_matrix):
 
 def getModularity(network: Network, partition: Partition) -> List[float]:
     """Given a Network and Partition, return Newman's modularity for each level of the partition."""
-    generatedArray = np.atleast_2d(np.assary(partition.data, dtype=int))
+    generatedArray = np.atleast_2d(np.asarray(partition.data, dtype=int))
     adjacency_matrix = network.getAdjacencyMatrix()
     # Calculate Q for each level
     Qs = []

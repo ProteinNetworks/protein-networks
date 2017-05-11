@@ -33,8 +33,8 @@ for i, pdbRef in enumerate(["1fl3", "1r76", "2ghw", "3mym", "3rj3", "3rpi"]):
             "database": db
         }
         partition = proteinnetworks.partition.Partition(**partitionArgs)
-        conductance = proteinnetworks.insight.getModularity(network=proteinNetwork, partition=partition)
-        convergence[N] = conductance
+        modularity = proteinnetworks.insight.getModularity(network=proteinNetwork, partition=partition)
+        convergence[N] = modularity
 
     with open("Qconvergence{}.json".format(i), mode='w') as flines:
         json.dump(convergence, flines, indent=2)
