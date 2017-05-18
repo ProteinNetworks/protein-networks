@@ -52,7 +52,7 @@ class Database:
         if not password:
             password = input("password: ").strip()
         self.client = pymongo.MongoClient(
-            "mongodb://writeAccess:" + password + "@127.0.0.1/proteinnetworks",
+            "mongodb://writeAccess:" + password + "@s7.tcm.phy.private.cam.ac.uk/proteinnetworks",
             serverSelectionTimeoutMS=1000)
         try:
             # The ismaster command is cheap and does not require auth.
