@@ -4,6 +4,8 @@ import sys
 import subprocess
 import numpy as np
 import os
+import networkx as nx
+import warnings
 import matplotlib.pyplot as plt
 from palettable.colorbrewer.qualitative import Set3_12
 from .database import Database
@@ -100,7 +102,8 @@ class Partition:
         """
         # Convert the list (or nested list) to a numpy array, for use with imshow.
         stripes = np.asarray(self.data, dtype=int)
-        numPlots = np.shape(stripes)[0] + 1 if includePFAMDomains else np.shape(stripes)[0]
+        numPlots = np.shape(
+            stripes)[0] + 1 if includePFAMDomains else np.shape(stripes)[0]
 
         fig, axes = plt.subplots(nrows=numPlots, figsize=(5, 5), sharex=True)
 
@@ -119,8 +122,8 @@ class Partition:
             axes[1].set_title("Generated structure")
             for i, ax in enumerate(axes[1:]):
                 ax.imshow(
-                    np.vstack(
-                        2 * [stripes[i + 1, :]]),  # vstack otherwise imshow complains
+                    np.vstack(2 * [stripes[i + 1, :]
+                                   ]),  # vstack otherwise imshow complains
                     aspect=10,
                     cmap=Set3_12.mpl_colormap,
                     interpolation="nearest")
@@ -129,8 +132,8 @@ class Partition:
         else:
             for i, ax in enumerate(axes):
                 ax.imshow(
-                    np.vstack(
-                        2 * [stripes[i, :]]),  # vstack otherwise imshow complains
+                    np.vstack(2 * [stripes[i, :]
+                                   ]),  # vstack otherwise imshow complains
                     aspect=10,
                     cmap=Set3_12.mpl_colormap,
                     interpolation="nearest")
@@ -151,7 +154,8 @@ class Partition:
         """
         residues = []
         # Get the chain ID, start residue and end residue for the protein.
-        mappings = self.database.extractMappings(self.pdbref, mappingtype="PFAM")
+        mappings = self.database.extractMappings(
+            self.pdbref, mappingtype="PFAM")
         if not mappings:
             raise ValueError("No PFAM data found for protein:", self.pdbref)
         else:
@@ -188,7 +192,8 @@ class Partition:
             nodes.append([firstNode, lastNode])
 
         # Get the size of the array, given that the list may be nested
-        n = len(self.data) if not any(isinstance(i, list) for i in self.data) else len(self.data[0])
+        n = len(self.data) if not any(isinstance(
+            i, list) for i in self.data) else len(self.data[0])
         expectedDomains = np.ones(n, dtype=int)
         counter = 2
         for domain in nodes:
@@ -209,7 +214,8 @@ class Partition:
         pymolCommands = []
 
         # Work out whether the given edgelist is contact or atomic
-        edgelisttype = self.database.extractDocumentGivenId(self.edgelistid)['edgelisttype']
+        edgelisttype = self.database.extractDocumentGivenId(
+            self.edgelistid)['edgelisttype']
         if edgelisttype == "residue":
             selector = "resi"
         elif edgelisttype == "atomic":
@@ -219,8 +225,8 @@ class Partition:
             col = np.asarray(col, dtype=int)  # necessary for np.where()
             pymolCommand = "\n".join([
                 "alter {0}_{1} and ({2} {3} ), b={4}".format(
-                    self.pdbref, i, selector,
-                    " or {} ".format(selector).join(str(x + 1) for x in np.where(col == com)[0]),
+                    self.pdbref, i, selector, " or {} ".format(selector).join(
+                        str(x + 1) for x in np.where(col == com)[0]),
                     com / numberOfCommunities) for com in set(col)
             ])
             pymolCommands.append(pymolCommand)
@@ -271,6 +277,31 @@ rebuild
         subprocess.run(["pymol", "temp.pml"])
         os.remove("temp.pml")
         os.remove("temp.pdb")
+
+    def draw(self):
+        """Draw the underlying network as a NetworkX graph, colour by community."""
+        edgelist = self.database.extractDocumentGivenId(
+            self.edgelistid)['data']
+        G = nx.Graph()
+        for i, j, weight in edgelist:
+            G.add_edge(i, j, weight=weight)
+
+        pos = nx.spring_layout(G)
+        fig, ax = plt.subplots(figsize=(5, 5))
+
+        # Suppress MPL's complaining, as it's a NetworkX problem.
+        warnings.filterwarnings("ignore")
+        count = 0
+        partition = np.asarray(self.data[0], dtype=int)
+        for com in set(partition):  # This will break for a 1d partition
+            count = count + 1
+            list_nodes = np.where(partition == com + 1)[0]
+            nx.draw_networkx_nodes(
+                G, pos, list(list_nodes), node_size=20, node_color=Set3_12.mpl_colors[count % 12])
+
+        nx.draw_networkx_edges(G, pos, alpha=0.5)
+        ax.set_title("Network for {}".format(self.pdbref))
+        plt.show()
 
 
 def treeFileToNestedLists(inputTreeFile):

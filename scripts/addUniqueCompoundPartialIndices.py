@@ -20,7 +20,7 @@ import pymongo
 if __name__ == "__main__":
     password = input("password: ").strip()
     client = pymongo.MongoClient(
-        "mongodb://writeAccess:" + password + "@127.0.0.1/proteinnetworks",
+        "mongodb://writeAccess:" + password + "@s7.tcm.phy.private.cam.ac.uk/proteinnetworks",
         serverSelectionTimeoutMS=1000)
     db = client.proteinnetworks
     collection = db.proteinnetworks
@@ -39,7 +39,7 @@ if __name__ == "__main__":
     collection.create_index(
         [("pdbref", pymongo.ASCENDING), ("edgelisttype", pymongo.ASCENDING),
          ("hydrogenstatus", pymongo.ASCENDING),
-         ("scaling", pymongo.ASCENDING)],
+         ("scaling", pymongo.ASCENDING), ("chainref", pymongo.ASCENDING)],
         unique=True,
         partialFilterExpression={"doctype": "edgelist"})
     collection.create_index(

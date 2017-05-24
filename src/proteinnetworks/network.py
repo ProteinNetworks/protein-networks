@@ -3,6 +3,9 @@
 import sys
 import numpy as np
 import math
+import networkx as nx
+import warnings
+import matplotlib.pyplot as plt
 from .database import Database
 from .atomicradii import atomicRadii
 
@@ -15,6 +18,7 @@ class Network:
                  edgelisttype,
                  hydrogenstatus,
                  scaling,
+                 chainref=None,
                  database=None):
         """
         Initialise the edgelist with a given parameter set.
@@ -24,11 +28,13 @@ class Network:
             - atomic / residue
             - status of hydrogen atoms
             - PDB reference
+            - chain (whether the network describes a full protein or a chain)
         """
         self.scaling = scaling
         self.edgelisttype = edgelisttype
         self.hydrogenstatus = hydrogenstatus
         self.pdbref = pdbref
+        self.chainref = chainref
         # Try to connect to the database
         if database:
             self.database = database
@@ -41,7 +47,7 @@ class Network:
                 sys.exit()
         # Attempt to extract the edgelist matching the given params
         doc = self.database.extractEdgelist(pdbref, edgelisttype,
-                                            hydrogenstatus, scaling)
+                                            hydrogenstatus, scaling, chainref)
         if doc:
             self.edgelist = doc['data']
             self.edgelistid = doc['_id']
@@ -49,10 +55,10 @@ class Network:
         else:
             print("no edgelist fitting those parameters found: generating")
             edgelist = self.generateEdgelist(pdbref, edgelisttype,
-                                             hydrogenstatus, scaling)
+                                             hydrogenstatus, scaling, chainref)
             self.edgelist = edgelist
             self.edgelistid = self.database.depositEdgelist(
-                pdbref, edgelisttype, hydrogenstatus, scaling, edgelist)
+                pdbref, edgelisttype, hydrogenstatus, scaling, edgelist, chainref)
 
     def getAdjacencyMatrix(self):
         """Return the adjacency matrix as a numpy array."""
@@ -66,7 +72,7 @@ class Network:
             adj[j - 1, i - 1] += weight
         return adj
 
-    def generateEdgelist(self, pdbref, edgelisttype, hydrogenstatus, scaling):
+    def generateEdgelist(self, pdbref, edgelisttype, hydrogenstatus, scaling, chainref):
         r"""
         Generate the edgelist using the supplied parameters.
 
@@ -99,7 +105,7 @@ class Network:
         pdbdata = self.database.extractPDBFile(pdbref)
         if not pdbdata:
             pdbdata = self.database.fetchPDBFileFromWeb(pdbref)
-        positions, elements, residues = extractAtomicData(pdbdata)
+        positions, elements, residues = extractAtomicData(pdbdata, chainref)
         assert len(positions) == len(residues) == len(elements)
 
         # get matrix of square distances
@@ -146,32 +152,70 @@ class Network:
 
         return edges
 
+    def draw(self):
+        """Draw the edgelist using NetworkX."""
+        G = nx.Graph()
+        for i, j, weight in self.edgelist:
+            G.add_edge(i, j, weight=weight)
 
-def extractAtomicData(pdbdata):
+        pos = nx.spring_layout(G)
+        fig, ax = plt.subplots(figsize=(5, 5))
+
+        # Suppress MPL's complaining, as it's a NetworkX problem.
+        warnings.filterwarnings("ignore")
+        nx.draw(G, pos=pos, node_color="grey")
+        ax.set_title("Network for {}".format(self.pdbref))
+        plt.show()
+
+
+def extractAtomicData(pdbdata, chainref):
     """
     Given a PDB file in the form of a list of lines, extract the atomic data.
 
-    pull all ATOM records, and push the atomic positions, element, and
-    residue number to three arrays.
+    if chainref is "None":
+        pull all ATOM records, and push the atomic positions, element, and
+        residue number to three arrays.
+    else:
+        pull all ATOM records matching the chainref, and assert that the arrays
+        to be returned are non-empty.
     """
     positions = []
     elements = []
     residues = []
     residueCounter = 0
     prevRes = 0
-    for line in pdbdata:
-        if line.strip() == "ENDMDL":
-            break
-        linelist = line.rstrip()
-        if linelist[0:4] == "ATOM":
-            residueNumber = int(linelist[22:26].strip())
-            if residueNumber != prevRes:
-                residueCounter += 1
-            prevRes = residueNumber
-            positions.append(
-                [linelist[30:38], linelist[38:46], linelist[46:54]])
-            # elements.append(linelist[76:78].strip())
-            elements.append(linelist[13].strip())
-            residues.append(residueCounter)
-    positions = np.asarray(positions, dtype=float)
-    return positions, elements, residues
+    if chainref is None:
+        for line in pdbdata:
+            if line.strip() == "ENDMDL":
+                break
+            linelist = line.rstrip()
+            if linelist[0:4] == "ATOM":
+                residueNumber = int(linelist[22:26].strip())
+                if residueNumber != prevRes:
+                    residueCounter += 1
+                prevRes = residueNumber
+                positions.append(
+                    [linelist[30:38], linelist[38:46], linelist[46:54]])
+                # elements.append(linelist[76:78].strip())
+                elements.append(linelist[13].strip())
+                residues.append(residueCounter)
+        positions = np.asarray(positions, dtype=float)
+        return positions, elements, residues
+    else:
+        for line in pdbdata:
+            if line.strip() == "ENDMDL":
+                break
+            linelist = line.rstrip()
+            if linelist[0:4] == "ATOM" and linelist[21] == chainref:
+                residueNumber = int(linelist[22:26].strip())
+                if residueNumber != prevRes:
+                    residueCounter += 1
+                prevRes = residueNumber
+                positions.append(
+                    [linelist[30:38], linelist[38:46], linelist[46:54]])
+                # elements.append(linelist[76:78].strip())
+                elements.append(linelist[13].strip())
+                residues.append(residueCounter)
+        positions = np.asarray(positions, dtype=float)
+        assert (positions.any() and elements and residues)
+        return positions, elements, residues
