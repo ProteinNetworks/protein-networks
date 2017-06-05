@@ -25,26 +25,19 @@ class SuperNetwork:
     Pull from the database if possible: otherwise generate anew.
     """
 
-    def __init__(self, inputpartition):
+    def __init__(self, inputpartition, level=None):
         """Generate the network from an existing Partition."""
         # Get the input partition and edgelist
         self.pdbref = inputpartition.pdbref  # Save the details on the partition used
         self.database = inputpartition.database
         self.partitionid = inputpartition.partitionid
-
-        # Attempt to extract the supernetwork matching the given params
-        doc = self.database.extractSuperNetwork(self.pdbref, self.partitionid)
-
-        if doc:
-            self.data = doc['data']
-            self.level = doc['level']
-            # print("supernetwork found")
-        else:
-            partition = inputpartition.data
-            edgelist = inputpartition.database.extractDocumentGivenId(
-                inputpartition.edgelistid)['data']
-
-            # Find the level of the partition (assuming this is Infomap) with the best Jaccard
+    
+        
+        partition = inputpartition.data
+        edgelist = inputpartition.database.extractDocumentGivenId(
+            inputpartition.edgelistid)['data']
+        # If no level is given, try to find the level best matching PFAM
+        if level is None:
             try:
                 pfamDomains = np.asarray(
                     inputpartition.getPFAMDomainArray(), dtype=int)
@@ -64,8 +57,23 @@ class SuperNetwork:
                     maxI = i
             print("Using level {}".format(maxI))
             self.level = maxI
-            partition = partition[maxI]
 
+        else:
+            print("Using specified level:", level)
+            self.level = int(level)
+
+        partition = partition[self.level]
+
+
+
+        # Attempt to extract the supernetwork matching the given params
+        doc = self.database.extractSuperNetwork(self.pdbref, self.partitionid, level)
+
+        if doc:
+            self.data = doc['data']
+            # print("supernetwork found")
+
+        else:
             # Generate the supernetwork
             communityEdgeList = {}
             for i, j, _ in edgelist:
@@ -90,7 +98,7 @@ class SuperNetwork:
                                               self.level, self.data)
 
     @classmethod
-    def fromPartitionId(SuperNetwork, partitionid, database):
+    def fromPartitionId(SuperNetwork, partitionid, database, level=None):
         """
         Given a database and a partitionid, generate the Partition class.
 
@@ -113,7 +121,7 @@ class SuperNetwork:
                 partitionDetails['detectionmethod'],
                 N=partitionDetails['N'],
                 database=database)
-        return SuperNetwork(inputpartition=inputPartition)
+        return SuperNetwork(inputpartition=inputPartition, level=level)
 
     def draw(self):
         """Draw the reduced edgelist using NetworkX."""
@@ -130,7 +138,7 @@ class SuperNetwork:
         ax.set_title("Community network for {}".format(self.pdbref))
         plt.show()
 
-    def getIsomorphs(self):
+    def getIsomorphs(self, subset=None):
         """Get all proteins in the database with an isomorphic supernetwork."""
         # Generate the NetworkX graph for the supernetwork
         G = nx.Graph()
@@ -138,7 +146,10 @@ class SuperNetwork:
             G.add_edge(i, j, weight=weight)
 
         # Get a cursor for all supernetworks in the database
-        proteins = self.database.extractAllSuperNetworks(pdbref=self.pdbref)
+        if subset is None:
+            proteins = self.database.extractAllSuperNetworks(pdbref=self.pdbref)
+        else:
+            proteins = subset
         isomorphs = []
         for protein in proteins:
             G2 = nx.Graph()

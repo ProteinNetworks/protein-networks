@@ -395,7 +395,7 @@ class Database:
         cursor = self.collection.find(query)
         return cursor
 
-    def extractSuperNetwork(self, pdbref, partitionid):
+    def extractSuperNetwork(self, pdbref, partitionid, level):
         """
         Attempt to extract the supernetwork.
 
@@ -416,6 +416,8 @@ class Database:
                 "doctype": "supernetwork",
                 "partitionid": partitionid
             }
+            if level is not None:
+                query['level'] = level
             cursor = self.collection.find(query)
             numresults = cursor.count()
             if not numresults:
