@@ -71,7 +71,7 @@ class SuperNetwork:
 
         if doc:
             self.data = doc['data']
-            # print("supernetwork found")
+            print("supernetwork found")
 
         else:
             # Generate the supernetwork
@@ -153,11 +153,18 @@ class SuperNetwork:
         isomorphs = []
         for protein in proteins:
             G2 = nx.Graph()
-            for i, j, weight in protein['data']:
-                G2.add_edge(i, j, weight=weight)
-            if nx.faster_could_be_isomorphic(G, G2) and nx.is_isomorphic(G,
-                                                                         G2):
-                isomorphs.append(protein['pdbref'])
+            if type(protein) is dict: 
+                for i, j, weight in protein['data']:
+                    G2.add_edge(i, j, weight=weight)
+                if nx.faster_could_be_isomorphic(G, G2) and nx.is_isomorphic(G,
+                                                                             G2):
+                    isomorphs.append(protein['pdbref'])
+            elif type(protein) is SuperNetwork:
+                for i, j, weight in protein.data:
+                    G2.add_edge(i, j, weight=weight)
+                if nx.faster_could_be_isomorphic(G, G2) and nx.is_isomorphic(G,
+                                                                             G2):
+                    isomorphs.append(protein.pdbref)
         return isomorphs
 
     def getWeakIsomorphs(self, subset=None):
