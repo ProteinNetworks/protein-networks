@@ -23,19 +23,21 @@ class SuperNetwork:
     A network generated from the community structure of the protein.
 
     Pull from the database if possible: otherwise generate anew.
+    Includes a single-chain reference, for use in the getIsomorphs function
     """
 
-    def __init__(self, inputpartition, level=None):
+    def __init__(self, inputpartition, singleChain=False, level=None):
         """Generate the network from an existing Partition."""
         # Get the input partition and edgelist
         self.pdbref = inputpartition.pdbref  # Save the details on the partition used
         self.database = inputpartition.database
         self.partitionid = inputpartition.partitionid
-    
-        
         partition = inputpartition.data
-        edgelist = inputpartition.database.extractDocumentGivenId(
-            inputpartition.edgelistid)['data']
+        edgelistDoc = inputpartition.database.extractDocumentGivenId(
+            inputpartition.edgelistid)
+        edgelist = edgelistDoc['data']
+        if singleChain:
+            self.chainref = edgelistDoc['chainref']
         # If no level is given, try to find the level best matching PFAM
         if level is None:
             try:
@@ -63,8 +65,6 @@ class SuperNetwork:
             self.level = int(level)
 
         partition = partition[self.level]
-
-
 
         # Attempt to extract the supernetwork matching the given params
         doc = self.database.extractSuperNetwork(self.pdbref, self.partitionid, level)
@@ -153,7 +153,7 @@ class SuperNetwork:
         isomorphs = []
         for protein in proteins:
             G2 = nx.Graph()
-            if type(protein) is dict: 
+            if type(protein) is dict:
                 for i, j, weight in protein['data']:
                     G2.add_edge(i, j, weight=weight)
                 if nx.faster_could_be_isomorphic(G, G2) and nx.is_isomorphic(G,
@@ -164,7 +164,7 @@ class SuperNetwork:
                     G2.add_edge(i, j, weight=weight)
                 if nx.faster_could_be_isomorphic(G, G2) and nx.is_isomorphic(G,
                                                                              G2):
-                    isomorphs.append(protein.pdbref)
+                    isomorphs.append("{}_{}".format(protein.pdbref, protein.chainref))
         return isomorphs
 
     def getWeakIsomorphs(self, subset=None):
