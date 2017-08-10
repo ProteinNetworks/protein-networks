@@ -30,6 +30,8 @@ if __name__ == "__main__":
     collection.create_index(
         [("pdbref", pymongo.ASCENDING), ("mappingtype", pymongo.ASCENDING)], unique=False, partialFilterExpression={"doctype": "mapping"})
     collection.create_index(
+        [("fragment1id", pymongo.ASCENDING), ("fragment2id", pymongo.ASCENDING)], unique=True, partialFilterExpression={"doctype": "fragmentTMscore"})
+    collection.create_index(
         "pdbref", unique=True, partialFilterExpression={"doctype": "pdbfile"})
     collection.create_index(
         [("pdbref", pymongo.ASCENDING), ("partitionid", pymongo.ASCENDING),
