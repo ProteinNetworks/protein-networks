@@ -104,8 +104,7 @@ class Partition:
         stripes = np.asarray(self.data, dtype=int)
         numPlots = np.shape(
             stripes)[0] + 1 if includePFAMDomains else np.shape(stripes)[0]
-
-        fig, axes = plt.subplots(nrows=numPlots, figsize=(5, 5), sharex=True)
+        fig, axes = plt.subplots(nrows=numPlots, figsize=(10, 5), sharex=True)
 
         if includePFAMDomains:
             pfamDomainArray = self.getPFAMDomainArray()
@@ -144,6 +143,7 @@ class Partition:
         plt.tight_layout()
         plt.subplots_adjust(top=0.85)
         plt.xlabel('Residue number')
+        plt.savefig("{}.pdf".format(self.pdbref), dpi=300)
         plt.show()
 
     def getPFAMDomainArray(self):
@@ -203,7 +203,7 @@ class Partition:
             counter += 1
         return expectedDomains
 
-    def plotPymolStructure(self):
+    def plotPymolStructure(self, level=-1, outputPng=False):
         """Plot the community structure overlaid onto the protein using PyMol.
 
         Generate the sequence of b-factor alterations for each level.
@@ -220,7 +220,12 @@ class Partition:
             selector = "resi"
         elif edgelisttype == "atomic":
             selector = "index"
-        for i, col in enumerate(self.data):
+
+        # If a level if specified, plot only that level
+
+        if level != -1:
+            i = level
+            col = self.data[i]
             numberOfCommunities = len(set(col))
             col = np.asarray(col, dtype=int)  # necessary for np.where()
             pymolCommand = "\n".join([
@@ -230,6 +235,17 @@ class Partition:
                     com / numberOfCommunities) for com in set(col)
             ])
             pymolCommands.append(pymolCommand)
+        else:
+            for i, col in enumerate(self.data):
+                numberOfCommunities = len(set(col))
+                col = np.asarray(col, dtype=int)  # necessary for np.where()
+                pymolCommand = "\n".join([
+                    "alter {0}_{1} and ({2} {3} ), b={4}".format(
+                        self.pdbref, i, selector, " or {} ".format(selector).join(
+                            str(x + 1) for x in np.where(col == com)[0]),
+                        com / numberOfCommunities) for com in set(col)
+                ])
+                pymolCommands.append(pymolCommand)
         """
         Amalgamate the pymol commands so as to load a pdb file for each level of hierarchy,
         then run the bfactor alterations.
@@ -271,10 +287,32 @@ set cartoon_side_chain_helper,on
 rebuild
         """
 
+        # If we are doing a single-chain analysis, cut out the other chains
+        try:
+            chainRef = self.database.extractDocumentGivenId(self.edgelistid)['chainref']
+            pymolScript += f"""
+select notGivenChain, ! chain {chainRef}
+remove notGivenChain
+zoom
+"""
+        except KeyError:
+            pass
+
+        # If we are after a png, then generate one
+        if outputPng:
+            pymolScript += f"""
+set ray_trace_mode = 1
+png {self.pdbref}.png, width=10cm, dpi=300, ray=1
+"""
+
         with open("temp.pml", mode='w') as flines:
             flines.write(pymolScript)
 
-        subprocess.run(["pymol", "temp.pml"])
+        if not outputPng:
+            subprocess.run(["pymol", "temp.pml"])
+        else:
+            # Run quietly
+            subprocess.run(["pymol", "-c", "temp.pml"])
         os.remove("temp.pml")
         os.remove("temp.pdb")
 
