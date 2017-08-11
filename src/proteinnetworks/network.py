@@ -72,7 +72,7 @@ class Network:
             adj[j - 1, i - 1] += weight
         return adj
 
-    def generateEdgelist(self, pdbref, edgelisttype, hydrogenstatus, scaling, chainref):
+    def generateEdgelist(self, pdbref, edgelisttype, hydrogenstatus, scaling, chainref=None):
         r"""
         Generate the edgelist using the supplied parameters.
 
@@ -168,7 +168,7 @@ class Network:
         plt.show()
 
 
-def extractAtomicData(pdbdata, chainref):
+def extractAtomicData(pdbdata, chainref=None):
     """
     Given a PDB file in the form of a list of lines, extract the atomic data.
 

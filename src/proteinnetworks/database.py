@@ -64,7 +64,7 @@ class Database:
         self.db = self.client.proteinnetworks
         self.collection = self.db.proteinnetworks
 
-    def extractEdgelist(self, pdbref, edgelisttype, hydrogenstatus, scaling, chainref):
+    def extractEdgelist(self, pdbref, edgelisttype, hydrogenstatus, scaling, chainref=None):
         """
         Attempt to extract the edgelist matching the given parameter set.
 
@@ -77,9 +77,10 @@ class Database:
             "doctype": "edgelist",
             "edgelisttype": edgelisttype,
             "hydrogenstatus": hydrogenstatus,
-            "scaling": scaling,
-            "chainref": chainref
+            "scaling": scaling
         }
+        if chainref is not None:
+            query["chainref"] = chainref
 
         self.validateEdgelist(query, excludeData=True)
         cursor = self.collection.find(query)
@@ -92,7 +93,7 @@ class Database:
             raise IOError("More than one edgelist found matching the query")
 
     def depositEdgelist(self, pdbref, edgelisttype, hydrogenstatus, scaling,
-                        edges, chainref):
+                        edges, chainref=None):
         """
         Deposit edgelist into the database.
 
@@ -104,9 +105,11 @@ class Database:
             "doctype": "edgelist",
             "edgelisttype": edgelisttype,
             "hydrogenstatus": hydrogenstatus,
-            "scaling": scaling,
-            "chainref": chainref
+            "scaling": scaling
         }
+        if chainref is not None:
+            edgelist["chainref"] = chainref
+
         cursor = self.collection.find(edgelist)
         numresults = cursor.count()
         if numresults:

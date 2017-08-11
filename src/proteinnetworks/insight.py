@@ -26,23 +26,22 @@ class SuperNetwork:
     Includes a single-chain reference, for use in the getIsomorphs function
     """
 
-    def __init__(self, inputpartition, singleChain=False, level=None):
+    def __init__(self, inputPartition, level=None):
         """Generate the network from an existing Partition."""
         # Get the input partition and edgelist
-        self.pdbref = inputpartition.pdbref  # Save the details on the partition used
-        self.database = inputpartition.database
-        self.partitionid = inputpartition.partitionid
-        partition = inputpartition.data
-        edgelistDoc = inputpartition.database.extractDocumentGivenId(
-            inputpartition.edgelistid)
+        self.pdbref = inputPartition.pdbref  # Save the details on the partition used
+        self.database = inputPartition.database
+        self.partitionid = inputPartition.partitionid
+        partition = inputPartition.data
+        edgelistDoc = inputPartition.database.extractDocumentGivenId(
+            inputPartition.edgelistid)
         edgelist = edgelistDoc['data']
-        if singleChain:
-            self.chainref = edgelistDoc['chainref']
+        self.chainref = edgelistDoc.get('chainref')
         # If no level is given, try to find the level best matching PFAM
         if level is None:
             try:
                 pfamDomains = np.asarray(
-                    inputpartition.getPFAMDomainArray(), dtype=int)
+                    inputPartition.getPFAMDomainArray(), dtype=int)
             except ValueError:
                 print("No PFAM entry -> cannot generate supernetwork")
                 raise ValueError
@@ -121,7 +120,7 @@ class SuperNetwork:
                 partitionDetails['detectionmethod'],
                 N=partitionDetails['N'],
                 database=database)
-        return SuperNetwork(inputpartition=inputPartition, level=level)
+        return SuperNetwork(inputPartition=inputPartition, level=level)
 
     def draw(self):
         """Draw the reduced edgelist using NetworkX."""
