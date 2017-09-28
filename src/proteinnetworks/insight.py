@@ -443,7 +443,7 @@ def getNMI(partitionA, partitionB):
     return NMI
 
 
-def getConductance(network: Network, partition: Partition) -> List[float]:
+def getConductanceFromPartition(network: Network, partition: Partition) -> List[float]:
     """Given a Network and Partition, return a conductance for each level of the partition."""
     generatedArray = partition.data
     adjacency_matrix = network.getAdjacencyMatrix()
@@ -461,7 +461,7 @@ def getConductance(network: Network, partition: Partition) -> List[float]:
     return conductances
 
 
-def calculateConductance(node_subset, adjacency_matrix):
+def getConductanceFromNodeSubset(node_subset, adjacency_matrix):
     """
     Return conductance given an adjacency matrix and a node_subset.
 
@@ -497,7 +497,7 @@ def calculateConductance(node_subset, adjacency_matrix):
     return conductance
 
 
-def getModularity(network: Network, partition: Partition) -> List[float]:
+def getModularityFromPartition(network: Network, partition: Partition) -> List[float]:
     """Given a Network and Partition, return Newman's modularity for each level of the partition."""
     generatedArray = np.atleast_2d(np.asarray(partition.data, dtype=int))
     adjacency_matrix = network.getAdjacencyMatrix()
@@ -505,12 +505,12 @@ def getModularity(network: Network, partition: Partition) -> List[float]:
     Qs = []
     for col in generatedArray:
 
-        Q = calculateModularity(adjacency_matrix, col)
+        Q = getModularityFromAdjacencyMatrix(adjacency_matrix, col)
         Qs.append(Q)
     return Qs
 
 
-def calculateModularity(adj, comlist):
+def getModularityFromAdjacencyMatrix(adj, comlist):
     r"""
     Given an adjacency matrix and a list of communities, return the modularity.
 
