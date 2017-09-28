@@ -6,6 +6,7 @@ python:
 install:
   # Tests if cargo works
   - curl https://sh.rustup.rs -sSf | sh -s -- -y
+  - export PATH=$PATH:/home/travis/.cargo/bin
   - cargo --version 
   - pip install -r requirements.txt
   - pip install .
