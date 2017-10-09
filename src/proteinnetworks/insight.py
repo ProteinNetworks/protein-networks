@@ -444,6 +444,7 @@ def getNMI(partitionA, partitionB):
 
 
 def getConductanceFromPartition(network: Network, partition: Partition) -> List[float]:
+
     """Given a Network and Partition, return a conductance for each level of the partition."""
     generatedArray = partition.data
     adjacency_matrix = network.getAdjacencyMatrix()
@@ -452,7 +453,7 @@ def getConductanceFromPartition(network: Network, partition: Partition) -> List[
     conductances = []
     for col in generatedArray:
         conductance = [
-            calculateConductance(
+            getConductanceFromNodeSubset(
                 np.where(np.asarray(
                     col, dtype=int) == j + 1)[0],
                 adjacency_matrix) for j in range(len(set(col)))
