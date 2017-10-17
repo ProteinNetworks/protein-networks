@@ -163,7 +163,10 @@ class SuperNetwork:
                     G2.add_edge(i, j, weight=weight)
                 if nx.faster_could_be_isomorphic(G, G2) and nx.is_isomorphic(G,
                                                                              G2):
-                    isomorphs.append("{}_{}".format(protein.pdbref, protein.chainref))
+                    isomorphicProtein = protein.pdbref
+                    if protein.chainref is not None:
+                        isomorphicProtein += "_{}".format(protein.chainref)
+                    isomorphs.append(isomorphicProtein)
         return isomorphs
 
     def getWeakIsomorphs(self, subset=None):
