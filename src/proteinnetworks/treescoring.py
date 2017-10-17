@@ -24,5 +24,3 @@ class Tree:
     def __init__(self, inputPartition: Partition):
         """Generate a tree from a given partition."""
         pass
-
-    

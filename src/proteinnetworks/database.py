@@ -34,7 +34,7 @@ NB this might be too large for MongoDB to handle (>16MB)
 """
 
 import pymongo
-from pymongo.errors import ConnectionFailure, DuplicateKeyError
+from pymongo.errors import ConnectionFailure, OperationFailure, DuplicateKeyError
 from bson.errors import InvalidId
 from bson.objectid import ObjectId
 import datetime
@@ -57,9 +57,11 @@ class Database:
         try:
             # The ismaster command is cheap and does not require auth.
             self.client.admin.command('ismaster')
-        except ConnectionFailure:
+        except ConnectionFailure as err:
             # Propagate the exception back up to whoever called it
-            raise IOError("Couldn't connect to the database")
+            raise IOError("Couldn't connect to the database") from err
+        except OperationFailure as err:
+            raise IOError("Password incorrect") from err
 
         self.db = self.client.proteinnetworks
         self.collection = self.db.proteinnetworks
@@ -81,6 +83,9 @@ class Database:
         }
         if chainref is not None:
             query["chainref"] = chainref
+        else:
+            # Needs to explicitly look for the record without a chainref field
+            query["chainref"] = {"$exists": False}
 
         self.validateEdgelist(query, excludeData=True)
         cursor = self.collection.find(query)
@@ -109,8 +114,14 @@ class Database:
         }
         if chainref is not None:
             edgelist["chainref"] = chainref
+            cursor = self.collection.find(edgelist)
 
-        cursor = self.collection.find(edgelist)
+        else:
+            # Explictly pass a "doesn't have a chainref field" to the query
+            temp = edgelist.copy()
+            temp['chainref'] = {"$exists": False}
+            cursor = self.collection.find(edgelist)
+
         numresults = cursor.count()
         if numresults:
             raise IOError(
@@ -183,8 +194,8 @@ class Database:
         print("adding PDB file to database...")
         try:
             self.collection.insert_one(document)
-        except DuplicateKeyError:
-            raise IOError("PDB file already in the database")
+        except DuplicateKeyError as err:
+            raise IOError("PDB file already in the database") from err
         return pdbfile
 
     def extractPartition(self, pdbref, edgelistid, detectionmethod, r, N):
@@ -199,8 +210,8 @@ class Database:
                 "_id": ObjectId(edgelistid),
                 "doctype": "edgelist"
             }).count()
-        except InvalidId:
-            raise IOError("edgelistid not valid:", edgelistid)
+        except InvalidId as err:
+            raise IOError("edgelistid not valid:", edgelistid) from err
 
         if numberOfEdgelists:
             query = {
@@ -231,8 +242,8 @@ class Database:
         """Return a document given an id. Return None if not found."""
         try:
             return self.collection.find_one({"_id": ObjectId(documentid)})
-        except InvalidId:
-            raise IOError("Invalid ID")
+        except InvalidId as err:
+            raise IOError("Invalid ID") from err
 
     def depositPartition(self, pdbref, edgelistid, detectionmethod, r, N,
                          data):
@@ -323,9 +334,9 @@ class Database:
                         for i in range(numcoms):
                             # Check there is at least one item in the list for all coms.
                             partition['data'].index(i + 1)
-                    except ValueError:
+                    except ValueError as err:
                         raise IOError(
-                            'partition invalid: gaps found in labelling')
+                            'partition invalid: gaps found in labelling') from err
                 # if a nested list
                 elif all(isinstance(i, list) for i in partition['data']):
                     for column in partition['data']:
@@ -334,9 +345,9 @@ class Database:
                             for j in range(numcoms):
                                 # Check there is at least one item in the list for all coms.
                                 column.index(j + 1)
-                        except ValueError:
+                        except ValueError as err:
                             raise IOError(
-                                'partition invalid: gaps found in labelling')
+                                'partition invalid: gaps found in labelling') from err
 
     def getNumberOfDocuments(self):
         """Return the total number of documents in the collection."""
@@ -365,6 +376,10 @@ class Database:
         # Validate scaling:
         if type(edgelist['scaling']) != float or edgelist['scaling'] < 0.0:
             raise IOError("scaling must be a non-negative float")
+        # Validate the chain reference
+        # if edgelist.get("chainref") is not None and type(edgelist["chainref"]) != str:
+        #     raise IOError("chain reference, if it exists, must be a string.")
+
         """
         Validate edges:
         Array correct shape, correct indexing, no self-loops.
@@ -410,8 +425,8 @@ class Database:
                 "_id": ObjectId(partitionid),
                 "doctype": "partition"
             }).count()
-        except InvalidId:
-            raise IOError("edgelistid not valid:", partitionid)
+        except InvalidId as err:
+            raise IOError("edgelistid not valid:", partitionid) from err
 
         if numberOfPartitions:
             query = {

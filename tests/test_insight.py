@@ -60,3 +60,4 @@ def test_supernetwork_init_all_options_valid_no_level(mock_database):
     }
     partition = proteinnetworks.partition.Partition(**partitionArgs)  # Tested by partition tests
     # superNetwork = proteinnetworks.insight.SuperNetwork(partition)
+    # assert partition

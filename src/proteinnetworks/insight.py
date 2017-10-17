@@ -36,7 +36,7 @@ class SuperNetwork:
         edgelistDoc = inputPartition.database.extractDocumentGivenId(
             inputPartition.edgelistid)
         edgelist = edgelistDoc['data']
-        self.chainref = edgelistDoc.get('chainref')
+        self.chainref = edgelistDoc.get('chainref')  # None if no chainref found
         # If no level is given, try to find the level best matching PFAM
         if level is None:
             try:
