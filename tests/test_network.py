@@ -3,9 +3,12 @@ Unit tests for the Network class.
 
 Units to be tested:
 
-__init__.
- generateEdgelist
- extractAtomicData
+Network()
+    __init__.
+    getAdjacencyMatrix
+    generateEdgelist
+    draw
+extractAtomicData
 """
 import proteinnetworks.network
 import proteinnetworks.database

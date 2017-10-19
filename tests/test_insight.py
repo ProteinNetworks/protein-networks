@@ -21,10 +21,10 @@ getMCS
 getShannonEntropy
 getMutualInfo
 getNMI
-getConductance
-calculateConductance
-getModularity
-calculateModularity
+getConductanceFromPartition
+getConductanceFromNodeSubset
+getModularityFromPartition
+getModularityFromAdjacencyMatrix
 """
 
 

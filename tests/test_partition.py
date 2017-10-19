@@ -9,6 +9,10 @@ Units:
 Partition:
     __init__
     generatePartition
+    plotStripeDiagram
+    getPFAMDomainArray
+    plotPymolStructure
+    draw
 treeFileToNestedLists
 """
 

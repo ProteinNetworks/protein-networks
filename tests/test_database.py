@@ -6,10 +6,17 @@ __init__ x
 extractEdgelist
 depositEdgelist x
 extractPDBFile x
+fetchPDBFileFromWeb
 extractPartition x
 extractDocumentGivenId x
 depositPartition x
+validatePartition
 getNumberOfDocuments x
+validateEdgelist
+extractMappings
+extractSuperNetwork
+depositSuperNetwork
+extractAllSuperNetworks
 """
 
 import proteinnetworks.database
