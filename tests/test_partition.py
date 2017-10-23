@@ -2,6 +2,8 @@ import proteinnetworks.partition
 from bson.objectid import ObjectId
 import os
 import subprocess
+import pytest
+
 """
 Unit tests for the partition module.
 
@@ -83,3 +85,12 @@ def test_partition_treefiletonestedlists_success(mock_database, mock_subprocess)
     listoflists = proteinnetworks.partition.treeFileToNestedLists("temp.tree")
     assert listoflists
     os.remove("temp.tree")
+
+
+def test_partition_treefiletonestedlists_error(mock_database, mock_subprocess):
+    """
+    Test that a a FileNotFoundError is thrown if you try to run treeFileToNestedLists
+    on something that isn't there
+    """
+    with pytest.raises(FileNotFoundError):
+        proteinnetworks.partition.treeFileToNestedLists("temp2.tree")

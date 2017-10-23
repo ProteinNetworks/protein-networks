@@ -433,3 +433,15 @@ def mock_subprocess(monkeypatch):
 7:9 0.00597952 "35" 35
 """)
     monkeypatch.setattr("subprocess.run", writetempfile)
+
+
+@pytest.fixture(autouse=True)
+def mock_matplotlib(monkeypatch):
+    """
+    Patch matplotlib to avoid stalling the tests.
+
+    FIXME should check this actually gets called
+    """
+    def show():
+        print("Mock plot used")
+    monkeypatch.setattr("matplotlib.pyplot.show", show)
