@@ -4,6 +4,11 @@ from bson.objectid import ObjectId
 import datetime
 from pymongo.errors import DuplicateKeyError
 
+# Necessary to ensure the matplotlib testing succeeds even without Xwindows backend
+import matplotlib
+matplotlib.use('Agg')
+
+
 data = [{
     'doctype': 'pdbfile',
     'data': [
