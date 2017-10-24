@@ -63,6 +63,16 @@ def test_network_init_edgelist_not_in_database(mock_database):
     assert type(pn.edgelistid) == ObjectId
 
 
+def test_network_init_edgelist_in_database_singlechain(mock_database):
+    """Test that if the edgelist is already present, it is successfully generated."""
+    pass
+
+
+def test_network_init_edgelist_not_in_database_singlechain(mock_database):
+    """Test when the edgelist must be generated from a multi-chain PDB file."""
+    pass
+
+
 """
 Tests for generateEdgelist
 
