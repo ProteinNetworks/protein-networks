@@ -43,7 +43,7 @@ def test_database_getnumberofdocuments(mock_database):
     to test.
     """
     db = proteinnetworks.database.Database(password="bla")
-    assert db.getNumberOfDocuments() == 4
+    assert db.getNumberOfDocuments() == 5
 
 
 """
