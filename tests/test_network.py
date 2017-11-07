@@ -73,6 +73,16 @@ def test_network_init_edgelist_not_in_database_singlechain(mock_database):
     pass
 
 
+def test_network_init_edgelist_singlechain_chainref_invalid(mock_database):
+    """Test when the chainref supplied is invalid (i.e. not a single char)."""
+    pass
+
+
+def test_network_init_edgelist_singlechain_chainref_not_found(mock_database):
+    """Test when the chainref supplied is not present (i.e. no ATOM lines contain that chain)."""
+    pass
+
+
 """
 Tests for generateEdgelist
 
