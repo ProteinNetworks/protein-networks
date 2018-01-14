@@ -342,6 +342,32 @@ png {self.pdbref}.png, width=10cm, dpi=300, ray=1
         plt.show()
 
 
+def toTree(data):
+        """
+        Take the partition, and output a tree in which each node is a community, with edge
+        weight the community size, connected to its parent node.
+        """
+        # The first layer is just each top-level community connected to the root node.
+        treeDepth = len(data)
+        edges = []
+        print(data)
+        for i in set(data[0]):
+            edges.append([0, i])
+        print()
+        # Now for each sub-row, get the communities belonging to the parent row
+        if treeDepth >= 2:
+            for i in range(treeDepth - 1):
+
+                column = np.asarray(data[i], dtype=int)
+                print(column)
+                for community in set(column):
+                    # Get the slice of the arrays below correspond to that parent community
+                    print(column[column == community])
+                    print()
+        print()
+        print(edges)
+
+
 def treeFileToNestedLists(inputTreeFile):
     """
     Take a path to a .tree file, output a list of partitions.
