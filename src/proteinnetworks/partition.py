@@ -395,7 +395,7 @@ def toTree(data):
                 edges.append(
                     [node['label'], prevLevelNode['label'], overlapSize])
 
-    print(edges)
+    return edges
     # # The first layer is just each top-level community connected to the root node.
     # treeDepth = len(data)
     # edges = []
@@ -473,3 +473,33 @@ def treeFileToNestedLists(inputTreeFile):
 
     # Drop the last column, it's simply the node indices
     return inputArray[inputArray[:, -1].argsort()].T.tolist()[:-1]
+
+
+def edgelistToGraph(edgelist):
+    """
+    Take a weighted edgelist of the form [[sourcenode, targetnode, weight], ...]
+    and return a networkx Graph.
+    """
+    G = nx.Graph()
+    for i, j, weight in edgelist:
+        G.add_edge(i, j, weight=weight)
+    return G
+
+
+def drawTree(tree):
+    """
+    Draw a Graph object using graphviz
+    """
+    from networkx.drawing.nx_agraph import graphviz_layout
+    warnings.filterwarnings("ignore")  # Until Networkx gets its act together
+
+    pos = graphviz_layout(tree, prog='twopi', root="0")
+    plt.figure(figsize=(8, 8))
+    nx.draw(
+        tree,
+        pos,
+        node_size=20,
+        alpha=0.5,
+        node_color="blue",
+        with_labels=False)
+    plt.show()
