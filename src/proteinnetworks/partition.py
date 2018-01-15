@@ -241,7 +241,8 @@ class Partition:
                 col = np.asarray(col, dtype=int)  # necessary for np.where()
                 pymolCommand = "\n".join([
                     "alter {0}_{1} and ({2} {3} ), b={4}".format(
-                        self.pdbref, i, selector, " or {} ".format(selector).join(
+                        self.pdbref, i, selector,
+                        " or {} ".format(selector).join(
                             str(x + 1) for x in np.where(col == com)[0]),
                         com / numberOfCommunities) for com in set(col)
                 ])
@@ -289,12 +290,14 @@ rebuild
 
         # If we are doing a single-chain analysis, cut out the other chains
         try:
-            chainRef = self.database.extractDocumentGivenId(self.edgelistid)['chainref']
+            chainRef = self.database.extractDocumentGivenId(
+                self.edgelistid)['chainref']
             pymolScript += f"""
 select notGivenChain, ! chain {chainRef}
 remove notGivenChain
 zoom
 """
+
         except KeyError:
             pass
 
@@ -335,7 +338,11 @@ png {self.pdbref}.png, width=10cm, dpi=300, ray=1
             count = count + 1
             list_nodes = np.where(partition == com + 1)[0]
             nx.draw_networkx_nodes(
-                G, pos, list(list_nodes), node_size=20, node_color=Set3_12.mpl_colors[count % 12])
+                G,
+                pos,
+                list(list_nodes),
+                node_size=20,
+                node_color=Set3_12.mpl_colors[count % 12])
 
         nx.draw_networkx_edges(G, pos, alpha=0.5)
         ax.set_title("Network for {}".format(self.pdbref))
@@ -343,29 +350,71 @@ png {self.pdbref}.png, width=10cm, dpi=300, ray=1
 
 
 def toTree(data):
-        """
-        Take the partition, and output a tree in which each node is a community, with edge
-        weight the community size, connected to its parent node.
-        """
-        # The first layer is just each top-level community connected to the root node.
-        treeDepth = len(data)
-        edges = []
-        print(data)
-        for i in set(data[0]):
-            edges.append([0, i])
-        print()
-        # Now for each sub-row, get the communities belonging to the parent row
-        if treeDepth >= 2:
-            for i in range(treeDepth - 1):
+    """
+    Take the partition, and output an edgelist for a  tree in which each node is a community,
+    with edge weight the community size, connected to its parent node.
+    For each community, index the node, the level, and the region of the network it spans.
+    Then for each level, if a community in the previous level has an overlap, then create a
+    link.
+    Note we expect this to produce a simple tree i.e. one and only one community in the
+    previous level should show this. SHOULD TEST
+    """
+    nodes = [{"label": 0, "level": 0, "region": [True] * len(data[0])}]
 
-                column = np.asarray(data[i], dtype=int)
-                print(column)
-                for community in set(column):
-                    # Get the slice of the arrays below correspond to that parent community
-                    print(column[column == community])
-                    print()
-        print()
-        print(edges)
+    nodeLabelCounter = 1
+
+    treeDepth = len(data)
+    for i in range(treeDepth):
+        partition = np.asarray(data[i], dtype=int)
+        for community in set(partition):
+            node = {
+                "label": nodeLabelCounter,
+                "level": i + 1,
+                "region": list(partition == community)
+            }
+
+            nodes.append(node)
+            nodeLabelCounter += 1
+
+    # Now we have a list of "node" dicts. For each node, check whether any nodes in the previous
+    # level overlap. If so, make an edge of weight = size of overlap.
+    # NB this is a super inefficient way to do this
+    edges = []
+    for node in nodes:
+        prevLevel = [x for x in nodes if x['level'] == node['level'] - 1]
+        if not prevLevel:
+            # Will occur for the root node
+            continue
+        for prevLevelNode in prevLevel:
+            overlap = [
+                x and y
+                for x, y in zip(node['region'], prevLevelNode['region'])
+            ]
+            overlapSize = sum(overlap)
+            if overlapSize != 0:
+                edges.append(
+                    [node['label'], prevLevelNode['label'], overlapSize])
+
+    print(edges)
+    # # The first layer is just each top-level community connected to the root node.
+    # treeDepth = len(data)
+    # edges = []
+    # print(data)
+    # for i in set(data[0]):
+    #     edges.append([0, i])
+    # print()
+    # # Now for each sub-row, get the communities belonging to the parent row
+    # if treeDepth >= 2:
+    #     for i in range(treeDepth - 1):
+
+    #         column = np.asarray(data[i], dtype=int)
+    #         print(column)
+    #         for community in set(column):
+    #             # Get the slice of the arrays below correspond to that parent community
+    #             print(column[column == community])
+    #             print()
+    # print()
+    # print(edges)
 
 
 def treeFileToNestedLists(inputTreeFile):
