@@ -501,5 +501,26 @@ def drawTree(tree):
         node_size=20,
         alpha=0.5,
         node_color="blue",
-        with_labels=False)
+        with_labels=True)
     plt.show()
+
+
+def getTreeSimilarity(partition1, partition2):
+    """
+    Given two Partitions, convert them into trees, then perform iterative labelling.
+
+    This should reveal the similarity of the two trees.
+
+    Algorithm:
+
+    Starting at the penultimate level, label the subtrees by isomorphism class.
+    Then do a labelled isomorphism check of the higher nodes, all the way to the top.
+    """
+    treeEdgelist1 = toTree(partition1.data)
+    tree1 = edgelistToGraph(treeEdgelist1)
+    treeEdgelist2 = toTree(partition2.data)
+    tree2 = edgelistToGraph(treeEdgelist2)
+
+    # Get the leaves
+    leafNodes1 = [x for x, y in tree1.degree_iter() if y==1]
+    leafNodes2 = [x for x, y in tree2.degree_iter() if y==1]

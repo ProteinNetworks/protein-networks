@@ -167,6 +167,13 @@ class Network:
         ax.set_title("Network for {}".format(self.pdbref))
         plt.show()
 
+    def getNetwork(self):
+        """Return a NetworkX Graph object."""
+        G = nx.Graph()
+        for i, j, weight in self.edgelist:
+            G.add_edge(i, j, weight=weight)
+        return G
+
 
 def extractAtomicData(pdbdata, chainref=None):
     """
