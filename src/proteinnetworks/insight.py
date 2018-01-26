@@ -36,7 +36,8 @@ class SuperNetwork:
         edgelistDoc = inputPartition.database.extractDocumentGivenId(
             inputPartition.edgelistid)
         edgelist = edgelistDoc['data']
-        self.chainref = edgelistDoc.get('chainref')  # None if no chainref found
+        self.chainref = edgelistDoc.get(
+            'chainref')  # None if no chainref found
         # If no level is given, try to find the level best matching PFAM
         if level is None:
             try:
@@ -49,9 +50,8 @@ class SuperNetwork:
             maxJaccard = -1
             maxI = -1
             for i, col in enumerate(partition):
-                jaccard = getModifiedJaccard(
-                    pfamDomains, np.asarray(
-                        col, dtype=int))
+                jaccard = getModifiedJaccard(pfamDomains,
+                                             np.asarray(col, dtype=int))
                 print("Level {} has Jaccard {}".format(i, jaccard))
                 if jaccard > maxJaccard:
                     maxJaccard = jaccard
@@ -66,7 +66,8 @@ class SuperNetwork:
         partition = partition[self.level]
 
         # Attempt to extract the supernetwork matching the given params
-        doc = self.database.extractSuperNetwork(self.pdbref, self.partitionid, level)
+        doc = self.database.extractSuperNetwork(self.pdbref, self.partitionid,
+                                                level)
 
         if doc:
             self.data = doc['data']
@@ -146,7 +147,8 @@ class SuperNetwork:
 
         # Get a cursor for all supernetworks in the database
         if subset is None:
-            proteins = self.database.extractAllSuperNetworks(pdbref=self.pdbref)
+            proteins = self.database.extractAllSuperNetworks(
+                pdbref=self.pdbref)
         else:
             proteins = subset
         isomorphs = []
@@ -155,14 +157,14 @@ class SuperNetwork:
             if type(protein) is dict:
                 for i, j, weight in protein['data']:
                     G2.add_edge(i, j, weight=weight)
-                if nx.faster_could_be_isomorphic(G, G2) and nx.is_isomorphic(G,
-                                                                             G2):
+                if nx.faster_could_be_isomorphic(G, G2) and nx.is_isomorphic(
+                        G, G2):
                     isomorphs.append(protein['pdbref'])
             elif type(protein) is SuperNetwork:
                 for i, j, weight in protein.data:
                     G2.add_edge(i, j, weight=weight)
-                if nx.faster_could_be_isomorphic(G, G2) and nx.is_isomorphic(G,
-                                                                             G2):
+                if nx.faster_could_be_isomorphic(G, G2) and nx.is_isomorphic(
+                        G, G2):
                     isomorphicProtein = protein.pdbref
                     if protein.chainref is not None:
                         isomorphicProtein += "_{}".format(protein.chainref)
@@ -204,14 +206,15 @@ class SuperNetwork:
             except ValueError:
                 continue
             if MCS:
-                similarity = MCS.number_of_nodes() / (max(
-                    G.number_of_nodes(), G2.number_of_nodes()))
+                similarity = MCS.number_of_nodes() / (
+                    max(G.number_of_nodes(), G2.number_of_nodes()))
             else:
                 similarity = 0
 
             if similarity > 0.5:
                 weakIsomorphs.append(
-                    [self.pdbref, protein['pdbref'], str(similarity)])
+                    [self.pdbref, protein['pdbref'],
+                     str(similarity)])
 
         return weakIsomorphs
 
@@ -336,7 +339,8 @@ def generateNullModel(testPartition):
 
     nullModel = np.zeros(len(testPartition), dtype=int)
     for i in range(len(newBoundaries) - 1):
-        nullModel[newBoundaries[i]:newBoundaries[i + 1] + 1] = newCommunities[i]
+        nullModel[newBoundaries[i]:newBoundaries[i + 1] + 1] = newCommunities[
+            i]
 
     # Check the null model
     # Get the number of boundaries
@@ -446,8 +450,8 @@ def getNMI(partitionA, partitionB):
     return NMI
 
 
-def getConductanceFromPartition(network: Network, partition: Partition) -> List[float]:
-
+def getConductanceFromPartition(network: Network,
+                                partition: Partition) -> List[float]:
     """Given a Network and Partition, return a conductance for each level of the partition."""
     generatedArray = partition.data
     adjacency_matrix = network.getAdjacencyMatrix()
@@ -457,8 +461,7 @@ def getConductanceFromPartition(network: Network, partition: Partition) -> List[
     for col in generatedArray:
         conductance = [
             getConductanceFromNodeSubset(
-                np.where(np.asarray(
-                    col, dtype=int) == j + 1)[0],
+                np.where(np.asarray(col, dtype=int) == j + 1)[0],
                 adjacency_matrix) for j in range(len(set(col)))
         ]
         conductances.append(conductance)
@@ -501,7 +504,8 @@ def getConductanceFromNodeSubset(node_subset, adjacency_matrix):
     return conductance
 
 
-def getModularityFromPartition(network: Network, partition: Partition) -> List[float]:
+def getModularityFromPartition(network: Network,
+                               partition: Partition) -> List[float]:
     """Given a Network and Partition, return Newman's modularity for each level of the partition."""
     generatedArray = np.atleast_2d(np.asarray(partition.data, dtype=int))
     adjacency_matrix = network.getAdjacencyMatrix()
@@ -538,3 +542,104 @@ def getModularityFromAdjacencyMatrix(adj, comlist):
         [adj[i, i] - (rowsums[i]**2) * inversestrength for i in range(N)])
 
     return (Q * 2 + ondiagonals) * inversestrength
+
+
+def edgelistToGraph(edgelist):
+    """
+    Take a weighted edgelist of the form [[sourcenode, targetnode, weight], ...]
+    and return a networkx Graph.
+    """
+    G = nx.Graph()
+    for i, j, weight in edgelist:
+        G.add_edge(i, j, weight=weight)
+    return G
+
+
+def drawTree(tree):
+    """
+    Draw a Graph object using graphviz
+    """
+    # from networkx.drawing.nx_agraph import graphviz_layout
+    warnings.filterwarnings("ignore")  # Until Networkx gets its act together
+
+    # pos = graphviz_layout(tree, prog='twopi', root="0")
+    plt.figure(figsize=(8, 8))
+    nx.draw(
+        tree,
+        # pos,
+        node_size=20,
+        alpha=0.5,
+        node_color="blue",
+        with_labels=True)
+    plt.show()
+
+
+def getTreeSimilarity(partition1, partition2):
+    """
+    Given two Partitions, convert them into trees, then perform iterative labelling.
+
+    This should reveal the similarity of the two trees.
+
+    Algorithm:
+
+    Starting at the penultimate level, label the subtrees by isomorphism class.
+    Then do a labelled isomorphism check of the higher nodes, all the way to the top.
+    """
+    treeEdgelist1 = toTree(partition1.data)
+    tree1 = edgelistToGraph(treeEdgelist1)
+    treeEdgelist2 = toTree(partition2.data)
+    tree2 = edgelistToGraph(treeEdgelist2)
+
+    # Get the leaves
+    leafNodes1 = [x for x, y in tree1.degree_iter() if y == 1]
+    leafNodes2 = [x for x, y in tree2.degree_iter() if y == 1]
+    print(leafNodes1, leafNodes2)
+
+
+def toTree(data):
+    """
+    Take the partition, and output an edgelist for a  tree in which each node is a community,
+    with edge weight the community size, connected to its parent node.
+    For each community, index the node, the level, and the region of the network it spans.
+    Then for each level, if a community in the previous level has an overlap, then create a
+    link.
+    Note we expect this to produce a simple tree i.e. one and only one community in the
+    previous level should show this. SHOULD TEST
+    """
+    nodes = [{"label": 0, "level": 0, "region": [True] * len(data[0])}]
+
+    nodeLabelCounter = 1
+
+    treeDepth = len(data)
+    for i in range(treeDepth):
+        partition = np.asarray(data[i], dtype=int)
+        for community in set(partition):
+            node = {
+                "label": nodeLabelCounter,
+                "level": i + 1,
+                "region": list(partition == community)
+            }
+
+            nodes.append(node)
+            nodeLabelCounter += 1
+
+    # Now we have a list of "node" dicts. For each node, check whether any nodes in the previous
+    # level overlap. If so, make an edge of weight = size of overlap.
+    # NB this is a super inefficient way to do this
+    edges = []
+    for node in nodes:
+        prevLevel = [x for x in nodes if x['level'] == node['level'] - 1]
+        if not prevLevel:
+            # Will occur for the root node
+            continue
+        for prevLevelNode in prevLevel:
+            overlap = [
+                x and y
+                for x, y in zip(node['region'], prevLevelNode['region'])
+            ]
+            overlapSize = sum(overlap)
+            if overlapSize != 0:
+                edges.append(
+                    [node['label'], prevLevelNode['label'], overlapSize])
+
+    return edges
