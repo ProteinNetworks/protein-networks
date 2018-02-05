@@ -585,19 +585,42 @@ def getTreeSimilarity(partition1, partition2):
     Starting at the penultimate level, label the subtrees by isomorphism class.
     Then do a labelled isomorphism check of the higher nodes, all the way to the top.
     """
-    treeEdgelist1 = toTree(partition1.data)
-    tree1 = edgelistToGraph(treeEdgelist1)
-    treeEdgelist2 = toTree(partition2.data)
-    tree2 = edgelistToGraph(treeEdgelist2)
+    import json  # for pretty printing
+    tree1 = toTree(partition1.data)
+    # tree1 = edgelistToGraph(treeEdgelist1)
+    tree2 = toTree(partition2.data)
+    # tree2 = edgelistToGraph(treeEdgelist2)
 
     # Get the leaves
-    leafNodes1 = [x for x, y in tree1.degree_iter() if y == 1]
-    leafNodes2 = [x for x, y in tree2.degree_iter() if y == 1]
-    print(leafNodes1, leafNodes2)
+    leafNodes1 = [x for x, y in tree1.degree() if y == 1]
+    # leafNodes2 = [x for x, y in tree2.degree() if y == 1]
+    # print(leafNodes1)
+    print(json.dumps(list(tree1.nodes(data=True)), indent=2))
+
+    # sizeOfTree = tree1.number_of_nodes()
+    # numberOfLabelledNodes = 0
+    for node in leafNodes1:
+        tree1.nodes[node]['childrenLabels'] = []
+        tree1.nodes[node]['isoLabel'] = 0
+        tree1.nodes[node]["size"] = 1  # Assumes all initial leaf nodes are of size 1
+        # numberOfLabelledNodes += 1
+        bottomLevel = tree1.nodes[node]["level"]
+    print(json.dumps(list(tree1.nodes(data=True)), indent=2))
+    # print(sizeOfTree)
+    # print(numberOfLabelledNodes)
+    print(bottomLevel)
+    for level in range(bottomLevel-1, 0, -1):
+        nodesAtLevel = [x for x,y in tree1.nodes(data=True) if y['level']==level]
+        print(nodesAtLevel)
+        for node in nodesAtLevel:
+            print(tree1.nodes(data=True)[node])
+            print(tree1.nodes[node]['children'])
+    # while numberOfLabelledNodes < sizeOfTree:
 
 
 def toTree(data):
     """
+    5/2 OUTPUTS A NETWORKX GRAPH
     Take the partition, and output an edgelist for a  tree in which each node is a community,
     with edge weight the community size, connected to its parent node.
     For each community, index the node, the level, and the region of the network it spans.
@@ -607,6 +630,10 @@ def toTree(data):
     previous level should show this. SHOULD TEST
     """
     nodes = [{"label": 0, "level": 0, "region": [True] * len(data[0])}]
+
+    G = nx.Graph()
+
+    G.add_node(0, level=0, children=[])  # , region=[True] * len(data[0]))
 
     nodeLabelCounter = 1
 
@@ -619,7 +646,7 @@ def toTree(data):
                 "level": i + 1,
                 "region": list(partition == community)
             }
-
+            G.add_node(nodeLabelCounter, level=i+1, children=[])  # , region=list(partition == community)) leave off for now
             nodes.append(node)
             nodeLabelCounter += 1
 
@@ -642,4 +669,11 @@ def toTree(data):
                 edges.append(
                     [node['label'], prevLevelNode['label'], overlapSize])
 
-    return edges
+                G.add_edge(node['label'], prevLevelNode['label'], weight=overlapSize)
+                # print(G.nodes[prevLevelNode['label']])
+                # print(G.nodes[prevLevelNode['label']]['children'])
+                # print(node['label'])
+                G.nodes[prevLevelNode['label']]['children'].append(node['label'])
+
+    # return edges
+    return G
