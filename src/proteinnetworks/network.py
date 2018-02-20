@@ -5,6 +5,8 @@ import numpy as np
 import math
 import networkx as nx
 import warnings
+import subprocess
+import os
 import matplotlib.pyplot as plt
 from .database import Database
 from .atomicradii import atomicRadii
@@ -58,7 +60,8 @@ class Network:
                                              hydrogenstatus, scaling, chainref)
             self.edgelist = edgelist
             self.edgelistid = self.database.depositEdgelist(
-                pdbref, edgelisttype, hydrogenstatus, scaling, edgelist, chainref)
+                pdbref, edgelisttype, hydrogenstatus, scaling, edgelist,
+                chainref)
 
     def getAdjacencyMatrix(self):
         """Return the adjacency matrix as a numpy array."""
@@ -72,7 +75,12 @@ class Network:
             adj[j - 1, i - 1] += weight
         return adj
 
-    def generateEdgelist(self, pdbref, edgelisttype, hydrogenstatus, scaling, chainref=None):
+    def generateEdgelist(self,
+                         pdbref,
+                         edgelisttype,
+                         hydrogenstatus,
+                         scaling,
+                         chainref=None):
         r"""
         Generate the edgelist using the supplied parameters.
 
@@ -120,8 +128,9 @@ class Network:
             for i in range(0, n):
                 for j in range(0, i):
                     # distance = getDistance(positions, i, j)
-                    cutoff = (atomicRadii[elements[i]] +
-                              atomicRadii[elements[j]]) * scaling
+                    cutoff = (
+                        atomicRadii[elements[i]] + atomicRadii[elements[j]]
+                    ) * scaling
                     # cutoff = cutoffs[i,j]
                     if distance_squared[i, j] < cutoff * cutoff:
                         weight = (cutoff - math.sqrt(distance_squared[i, j])
@@ -133,8 +142,9 @@ class Network:
             edgeList = {}
             for i in range(0, n):
                 for j in range(0, i):
-                    cutoff = (atomicRadii[elements[i]] +
-                              atomicRadii[elements[j]]) * scaling
+                    cutoff = (
+                        atomicRadii[elements[i]] + atomicRadii[elements[j]]
+                    ) * scaling
                     if distance_squared[i, j] < cutoff * cutoff:
                         res1, res2 = residues[i], residues[j]
                         if res1 != res2:
@@ -173,6 +183,89 @@ class Network:
         for i, j, weight in self.edgelist:
             G.add_edge(i, j, weight=weight)
         return G
+
+    def plotPymolNetworkStructure(self, outputPng=False):
+        """
+        Plot the network structure of the protein using PyMol.#
+        
+        TODO this only really works for atomic networks
+        """
+
+        # Work out whether the given edgelist is contact or atomic
+        edgelisttype = self.database.extractDocumentGivenId(
+            self.edgelistid)['edgelisttype']
+        if edgelisttype == "residue":
+            selector = "resi"
+        elif edgelisttype == "atomic":
+            selector = "index"
+
+        # Write the pdb file out as a temp file for PyMol FIXME
+        pdb = self.database.extractPDBFile(self.pdbref)
+        if not pdb:
+            pdb = self.database.fetchPDBFileFromWeb(self.pdbref)
+        with open("temp.pdb", mode='w') as flines:
+            flines.write("\n".join(pdb))
+
+        pymolScript = "load temp.pdb, {0}".format(self.pdbref)
+        pymolScript += "\n"
+        if edgelisttype == "residue":
+            pymolScript += "remove name ! ca\n"
+
+
+        pymolScript += """
+#formatting
+remove solvent
+hide all
+show spheres
+set sphere_scale, 0.25, (all)
+set stick_radius=0.1
+unbond (all), (all)
+show sticks
+set antialias = on
+set depth_cue = 1
+set specular = 1
+set surface_quality = 1
+set stick_quality = 15
+set sphere_quality = 2
+alter (all), b=1.0
+set ray_trace_mode, 1
+bg_color white
+"""
+        for node1, node2, weight in self.edgelist:
+            pymolScript += 'cmd.bond("{0} {1}", "( {0} {2})")\n'.format(selector, node1, node2)
+
+        pymolScript += "rebuild\n"
+
+        # If we are doing a single-chain analysis, cut out the other chains
+        try:
+            chainRef = self.database.extractDocumentGivenId(
+                self.edgelistid)['chainref']
+            pymolScript += f"""
+select notGivenChain, ! chain {chainRef}
+remove notGivenChain
+zoom
+"""
+        except KeyError:
+            pass
+
+        # If we are after a png, then generate one
+        pymolScript += "save {self.pdbref}.pse\n"
+        if outputPng:
+            pymolScript += f"""
+set ray_trace_mode = 1
+png {self.pdbref}.png, width=10cm, dpi=300, ray=1
+"""
+
+        with open("temp.pml", mode='w') as flines:
+            flines.write(pymolScript)
+
+        if not outputPng:
+            subprocess.run(["pymol", "temp.pml"])
+        else:
+            # Run quietly
+            subprocess.run(["pymol", "-c", "temp.pml"])
+        os.remove("temp.pml")
+        os.remove("temp.pdb")
 
 
 def extractAtomicData(pdbdata, chainref=None):
