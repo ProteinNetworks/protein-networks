@@ -219,6 +219,146 @@ class SuperNetwork:
         return weakIsomorphs
 
 
+class SuperNetworkNullModel:
+    """
+    A network generated from a null model, using a given community structure as a base.
+
+    Never store in the database
+    Includes a single-chain reference, for use in the getIsomorphs function
+    """
+
+    def __init__(self, inputPartition, level=None):
+        """Generate the network from an existing Partition."""
+        # Get the input partition and edgelist
+        self.pdbref = inputPartition.pdbref  # Save the details on the partition used
+        self.database = inputPartition.database
+        self.partitionid = inputPartition.partitionid
+        partition = inputPartition.data
+        edgelistDoc = inputPartition.database.extractDocumentGivenId(
+            inputPartition.edgelistid)
+        edgelist = edgelistDoc['data']
+        self.chainref = edgelistDoc.get(
+            'chainref')  # None if no chainref found
+        # If no level is given, try to find the level best matching PFAM
+
+        partition = generateNullModel(partition[0])
+        # Generate the supernetwork
+        communityEdgeList = {}
+        for i, j, _ in edgelist:
+            com_i, com_j = partition[int(i) - 1], partition[int(j) - 1]
+            if com_i != com_j:
+                if not (com_i, com_j) in communityEdgeList:
+                    if (com_j, com_i) in communityEdgeList:
+                        communityEdgeList[(com_j, com_i)] += 1
+                    else:
+                        communityEdgeList[(com_i, com_j)] = 1
+                else:
+                    communityEdgeList[(com_i, com_j)] += 1
+
+        communityEdgeListSorted = []
+        for row, weight in communityEdgeList.items():
+            i, j = row
+            communityEdgeListSorted.append([i, j, weight])
+        communityEdgeListSorted.sort()
+
+        self.data = communityEdgeListSorted
+
+    def draw(self):
+        """Draw the reduced edgelist using NetworkX."""
+        G = nx.Graph()
+        for i, j, weight in self.data:
+            G.add_edge(i, j, weight=weight)
+
+        pos = nx.spring_layout(G, k=10)
+        fig, ax = plt.subplots(figsize=(5, 5))
+
+        # Suppress MPL's complaining, as it's a NetworkX problem.
+        warnings.filterwarnings("ignore")
+        nx.draw(G, pos=pos, node_color="grey")
+        ax.set_title("Community network for {}".format(self.pdbref))
+        plt.show()
+
+    def getIsomorphs(self, subset=None):
+        """Get all proteins in the database with an isomorphic supernetwork."""
+        # Generate the NetworkX graph for the supernetwork
+        G = nx.Graph()
+        for i, j, weight in self.data:
+            G.add_edge(i, j, weight=weight)
+        # Get a cursor for all supernetworks in the database
+        if subset is None:
+            proteins = self.database.extractAllSuperNetworks(
+                pdbref=self.pdbref)
+        else:
+            proteins = subset
+        isomorphs = []
+        for protein in proteins:
+
+            G2 = nx.Graph()
+            if type(protein) is dict:
+                for i, j, weight in protein['data']:
+                    G2.add_edge(i, j, weight=weight)
+                if nx.faster_could_be_isomorphic(G, G2) and nx.is_isomorphic(
+                        G, G2):
+                    isomorphs.append(protein['pdbref'])
+            elif type(protein) is SuperNetworkNullModel:
+                for i, j, weight in protein.data:
+                    G2.add_edge(i, j, weight=weight)
+                if nx.faster_could_be_isomorphic(G, G2) and nx.is_isomorphic(
+                        G, G2):
+                    isomorphicProtein = protein.pdbref
+                    if protein.chainref is not None:
+                        isomorphicProtein += "_{}".format(protein.chainref)
+                    isomorphs.append(isomorphicProtein)
+        return isomorphs
+
+    def getWeakIsomorphs(self, subset=None):
+        """
+        Get all proteins in the database with an weakly isomorphic supernetwork.
+
+        Returns a list [self.pdbref, otherpdbref, simscore] for all proteins with
+        a simscore > 0.5.
+
+        If a subset of the supernetworks are given, this is used. (subset must be a numpy array)
+        """
+        # Generate the NetworkX graph for the supernetwork
+        G = nx.Graph()
+        for i, j, weight in self.data:
+            G.add_edge(i, j)
+
+        G = nx.convert_node_labels_to_integers(G)
+        # Get a cursor for all supernetworks in the database
+
+        if subset.any():
+            proteins = subset
+        else:
+            proteins = self.database.extractAllSuperNetworks(
+                pdbref=self.pdbref)
+        weakIsomorphs = []
+        for protein in proteins:
+            G2 = nx.Graph()
+            for i, j, weight in protein['data']:
+                G2.add_edge(i, j)
+
+            G2 = nx.convert_node_labels_to_integers(G2)
+            # Get the maximum common subgraph for the two supernetworks
+            try:
+                MCS = getMCS(G, G2)
+            except ValueError:
+                continue
+            if MCS:
+                similarity = MCS.number_of_nodes() / (
+                    max(G.number_of_nodes(), G2.number_of_nodes()))
+            else:
+                similarity = 0
+
+            if similarity > 0.5:
+                weakIsomorphs.append(
+                    [self.pdbref, protein['pdbref'],
+                     str(similarity)])
+
+        return weakIsomorphs
+
+
 def getModifiedJaccard(expectedArray, generatedArray):
     """
     A scoring function for each PFAM domain in a protein.
@@ -588,7 +728,7 @@ def getTreeSimilarity(partition1, partition2):
     import json  # for pretty printing
     tree1 = toTree(partition1.data)
     # tree1 = edgelistToGraph(treeEdgelist1)
-    tree2 = toTree(partition2.data)
+    # tree2 = toTree(partition2.data)
     # tree2 = edgelistToGraph(treeEdgelist2)
 
     # Get the leaves
@@ -610,7 +750,7 @@ def getTreeSimilarity(partition1, partition2):
     # print(numberOfLabelledNodes)
     print(bottomLevel)
     for level in range(bottomLevel-1, 0, -1):
-        nodesAtLevel = [x for x,y in tree1.nodes(data=True) if y['level']==level]
+        nodesAtLevel = [x for x, y in tree1.nodes(data=True) if y['level']==level]
         print(nodesAtLevel)
         for node in nodesAtLevel:
             print(tree1.nodes(data=True)[node])
@@ -646,7 +786,8 @@ def toTree(data):
                 "level": i + 1,
                 "region": list(partition == community)
             }
-            G.add_node(nodeLabelCounter, level=i+1, children=[])  # , region=list(partition == community)) leave off for now
+            G.add_node(nodeLabelCounter, level=i+1, children=[])
+            # , region=list(partition == community)) leave off for now
             nodes.append(node)
             nodeLabelCounter += 1
 
