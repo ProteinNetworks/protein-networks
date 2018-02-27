@@ -248,8 +248,6 @@ zoom
         except KeyError:
             pass
 
-        # If we are after a png, then generate one
-        pymolScript += "save {self.pdbref}.pse\n"
         if outputPng:
             pymolScript += f"""
 set ray_trace_mode = 1
