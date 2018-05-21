@@ -11,7 +11,7 @@ setup(
     version='0.1dev',
     description='Network analysis tools for protein structure',
     long_description=readme,
-    url='http://github.com/turingcompliant/protein-networks',
+    url='http://github.com/wllgrnt/protein-networks',
     author='William Grant',
     author_email='contact@wpg.io',
     license=license,
