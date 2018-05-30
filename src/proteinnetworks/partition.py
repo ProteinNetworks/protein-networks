@@ -297,9 +297,10 @@ select notGivenChain, ! chain {chainRef}
 remove notGivenChain
 zoom
 """
-
         except KeyError:
             pass
+
+        pymolScript += f"save {self.pdbref}.pse \n"
 
         # If we are after a png, then generate one
         if outputPng:

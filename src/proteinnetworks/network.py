@@ -1,14 +1,13 @@
 """Stores functionality related to the generation and analysis of edgelists."""
 
-import sys
 import numpy as np
 import math
 import networkx as nx
 import warnings
 import subprocess
 import os
+import urllib
 import matplotlib.pyplot as plt
-from .database import Database
 from .atomicradii import atomicRadii
 
 
@@ -40,28 +39,26 @@ class Network:
         # Try to connect to the database
         if database:
             self.database = database
+            # Attempt to extract the edgelist matching the given params
+            doc = self.database.extractEdgelist(
+                pdbref, edgelisttype, hydrogenstatus, scaling, chainref)
+            if doc:
+                self.edgelist = doc['data']
+                self.edgelistid = doc['_id']
+                print("edgelist found")
+            else:
+                print("no edgelist fitting those parameters found: generating")
+                edgelist = self.generateEdgelist(
+                    pdbref, edgelisttype, hydrogenstatus, scaling, chainref)
+                self.edgelist = edgelist
+                self.edgelistid = self.database.depositEdgelist(
+                    pdbref, edgelisttype, hydrogenstatus, scaling, edgelist,
+                    chainref)
         else:
-            try:
-                self.database = Database()
-                print("successfully connected")
-            except IOError:
-                print("Couldn't connect to server")
-                sys.exit()
-        # Attempt to extract the edgelist matching the given params
-        doc = self.database.extractEdgelist(pdbref, edgelisttype,
-                                            hydrogenstatus, scaling, chainref)
-        if doc:
-            self.edgelist = doc['data']
-            self.edgelistid = doc['_id']
-            print("edgelist found")
-        else:
-            print("no edgelist fitting those parameters found: generating")
-            edgelist = self.generateEdgelist(pdbref, edgelisttype,
-                                             hydrogenstatus, scaling, chainref)
-            self.edgelist = edgelist
-            self.edgelistid = self.database.depositEdgelist(
-                pdbref, edgelisttype, hydrogenstatus, scaling, edgelist,
-                chainref)
+            print("No database provided")
+            self.database = None
+            self.edgelist = self.generateEdgelist(
+                pdbref, edgelisttype, hydrogenstatus, scaling, chainref)
 
     def getAdjacencyMatrix(self):
         """Return the adjacency matrix as a numpy array."""
@@ -109,10 +106,13 @@ class Network:
         #     # HAAD generates a *.pdb.h file, in which the positions of the hydrogens have
         #     # been added and all non-ATOM files (and the element info) stripped out.
         #     filename = filename + ".h"
+        if self.database is not None:
+            pdbdata = self.database.extractPDBFile(pdbref)
+            if not pdbdata:
+                pdbdata = self.database.fetchPDBFileFromWeb(pdbref)
+        else:
+            pdbdata = fetchPDBFileFromWeb(pdbref)
 
-        pdbdata = self.database.extractPDBFile(pdbref)
-        if not pdbdata:
-            pdbdata = self.database.fetchPDBFileFromWeb(pdbref)
         positions, elements, residues = extractAtomicData(pdbdata, chainref)
         assert len(positions) == len(residues) == len(elements)
 
@@ -187,30 +187,33 @@ class Network:
     def plotPymolNetworkStructure(self, outputPng=False):
         """
         Plot the network structure of the protein using PyMol.#
-        
+
         TODO this only really works for atomic networks
         """
 
         # Work out whether the given edgelist is contact or atomic
-        edgelisttype = self.database.extractDocumentGivenId(
-            self.edgelistid)['edgelisttype']
-        if edgelisttype == "residue":
+        # edgelisttype = self.database.extractDocumentGivenId(
+        #     self.edgelistid)['edgelisttype']
+        if self.edgelisttype == "residue":
             selector = "resi"
-        elif edgelisttype == "atomic":
+        elif self.edgelisttype == "atomic":
             selector = "index"
 
         # Write the pdb file out as a temp file for PyMol FIXME
-        pdb = self.database.extractPDBFile(self.pdbref)
-        if not pdb:
-            pdb = self.database.fetchPDBFileFromWeb(self.pdbref)
+        if self.database is not None:
+            pdb = self.database.extractPDBFile(self.pdbref)
+            if not pdb:
+                pdb = self.database.fetchPDBFileFromWeb(self.pdbref)
+        else:
+            pdb = fetchPDBFileFromWeb(self.pdbref)
+
         with open("temp.pdb", mode='w') as flines:
             flines.write("\n".join(pdb))
 
         pymolScript = "load temp.pdb, {0}".format(self.pdbref)
         pymolScript += "\n"
-        if edgelisttype == "residue":
+        if self.edgelisttype == "residue":
             pymolScript += "remove name ! ca\n"
-
 
         pymolScript += """
 #formatting
@@ -232,19 +235,19 @@ set ray_trace_mode, 1
 bg_color white
 """
         for node1, node2, weight in self.edgelist:
-            pymolScript += 'cmd.bond("{0} {1}", "( {0} {2})")\n'.format(selector, node1, node2)
+            pymolScript += 'cmd.bond("{0} {1}", "( {0} {2})")\n'.format(
+                selector, node1, node2)
 
         pymolScript += "rebuild\n"
 
         # If we are doing a single-chain analysis, cut out the other chains
         try:
-            chainRef = self.database.extractDocumentGivenId(
-                self.edgelistid)['chainref']
             pymolScript += f"""
-select notGivenChain, ! chain {chainRef}
+select notGivenChain, ! chain {self.chainref}
 remove notGivenChain
 zoom
 """
+
         except KeyError:
             pass
 
@@ -317,3 +320,29 @@ def extractAtomicData(pdbdata, chainref=None):
         positions = np.asarray(positions, dtype=float)
         assert (positions.any() and elements and residues)
         return positions, elements, residues
+
+
+def fetchPDBFileFromWeb(pdbRef):
+    """fetch the PDB file from the RCSB". Headers stripped to save disk space"""
+    # Validate the pdbref
+    if not (type(pdbRef) == str and len(pdbRef) == 4):
+        raise IOError("Malformed PDB reference:", pdbRef)
+
+    # Pull the PDB file from the Central Repo
+    headers = [
+        "HEADER", "OBSLTE", "TITLE", "SPLT", "CAVEAT", "COMPND", "SOURCE",
+        "KEYWDS", "EXPDTA", "NUMMDL", "MDLTYP", "AUTHOR", "REVDAT", "SPRSDE",
+        "JRNL", "REMARKS", "REMARK"
+    ]
+    url = "http://www.rcsb.org/pdb/files/{}.pdb".format(pdbRef)
+    data = urllib.request.urlopen(url).readlines()
+    pdbfile = []
+    for line in data:
+        line = line.decode().strip()
+        # Strip out the headers.
+        for header in headers:
+            if line.startswith(header):
+                break
+        else:
+            pdbfile.append(line)
+    return pdbfile
