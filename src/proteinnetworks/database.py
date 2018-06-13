@@ -485,3 +485,27 @@ class Database:
         }
         cursor = self.collection.find(query)
         return cursor
+
+
+class LocalCollection:
+    """
+    A very limited in-memory "database" to be used if no MongoDB instance can be found.
+
+    Stores records as a list of dicts, manipulated with the following methods:
+    - collection.find():
+        given a set of parameters (including wildcards such as $exists etc) as a dict,
+        return a list of the dicts in the database matching this description.
+
+    - collection.find_one():
+        as above, but only return one. Used in this code to pull things by their ObjectId.
+
+    - collection.insert_one():
+        given a dict, add an ObjectId, push the record, return the id.
+
+    - count():
+        return the number of records in the db.
+    """
+
+    def __init__(self):
+        """Initialise the empty list of dicts."""
+        self.storageList = []
