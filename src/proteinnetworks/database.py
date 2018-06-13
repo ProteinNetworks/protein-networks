@@ -509,3 +509,29 @@ class LocalCollection:
     def __init__(self):
         """Initialise the empty list of dicts."""
         self.storageList = []
+
+    def find(self, query):
+        """Return a 'cursor' which behaves like a generator with a count method."""    
+        class Cursor(list):
+            """Extend the list class with a count method that does the same thing as len()."""
+            def count(self):
+                return len(self)
+
+        results = []
+        return results
+    
+    def find_one(self, query):
+        """
+        Return a single record.
+
+        As we expect the local DB to be small, this can just be find() with a length check.
+        """
+        results = self.find(query)
+        assert len(results) < 2
+        return results
+
+    def insert_one(self, record):
+        pass
+
+    def count(self):
+        return len(self.storageList)
