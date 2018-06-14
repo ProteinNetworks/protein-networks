@@ -1,3 +1,5 @@
+from bson import ObjectId
+
 
 class LocalCollection:
     """
@@ -25,25 +27,32 @@ class LocalCollection:
     def find(self, query):
         """
         Return a 'cursor' which behaves like a generator with a count method.
-        
-        TODO add support for wildcard matching
-        """    
+
+        """
         class Cursor(list):
             """Extend the list class with a count method that does the same thing as len()."""
             def count(self):
                 return len(self)
-        
+
         subset = []
         for record in self.storageList:
             for key, value in query.items():
-                if record[key] != value:
-                    break
+                if type(value) == dict and "$exists" in value:
+                    exists = value["$exists"]
+                    # match if "exists" is False and key isn't in the record
+                    # or if "exists" is True and key is in the record
+                    match = (exists and key in record) or (not exists and (key not in record))
+                    if not match:
+                        break
+                else:
+                    if record[key] != value:
+                        break
             else:
                 subset.append(record)
 
         results = Cursor(subset)
         return results
-    
+
     def find_one(self, query):
         """
         Return a single record.
@@ -55,7 +64,19 @@ class LocalCollection:
         return results
 
     def insert_one(self, record):
-        pass
+        """
+        Push a dictionary to the "database", adding a BSON ObjectId, and return a Result
+        (with an inserted_id attribute).
+        """
+        class Result:
+            """A container for the inserted_id, necessary to match the pymongo collection."""
+            def __init__(self, id):
+                self.inserted_id = id
+
+        record["_id"] = ObjectId()
+        self.storageList.append(record)
+        result = Result(record["_id"])
+        return result
 
     def count(self):
         return len(self.storageList)
@@ -64,6 +85,5 @@ class LocalCollection:
 collection = LocalCollection()
 query = {"pdbref": "2ubq"}
 results = collection.find(query)
-results.count()
+results = collection.find_one(query)
 print(results)
-print("done")
