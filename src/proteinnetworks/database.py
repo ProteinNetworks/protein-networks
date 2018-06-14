@@ -566,8 +566,9 @@ class LocalCollection:
         """
         results = self.find(query)
         assert len(results) < 2
-        return results
-
+        if len(results) == 1:
+            return results[0]
+        
     def insert_one(self, record):
         """
         Push a dictionary to the "database", adding a BSON ObjectId, and return a Result
