@@ -47,16 +47,12 @@ class Partition:
         if N != -1:
             self.N = N
         # Try to connect to the database
-
         if database:
             self.database = database
         else:
-            try:
-                self.database = Database()
-                print("successfully connected")
-            except IOError:
-                print("Couldn't connect to server")
-                sys.exit()
+            print("no database provided: using temporary store")
+            self.database = Database(local=True)
+
         # Attempt to extract the partition matching the given params
         doc = self.database.extractPartition(pdbref, edgelistid,
                                              detectionmethod, r, N)

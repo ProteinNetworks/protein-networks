@@ -46,27 +46,36 @@ import urllib.request
 class Database:
     """A wrapper around MongoDB."""
 
-    def __init__(self, password=""):
+    def __init__(self, password="", local=False):
         """Connect to MongoDB, and ensure that it's running."""
         # Server is stored locally; if I can't find it in 1 second its not running.
-        if not password:
-            password = input("password: ").strip()
-        self.client = pymongo.MongoClient(
-            "mongodb://writeAccess:" + password + "@s7.tcm.phy.private.cam.ac.uk/proteinnetworks",
-            serverSelectionTimeoutMS=1000)
-        try:
-            # The ismaster command is cheap and does not require auth.
-            self.client.admin.command('ismaster')
-        except ConnectionFailure as err:
-            # Propagate the exception back up to whoever called it
-            raise IOError("Couldn't connect to the database") from err
-        except OperationFailure as err:
-            raise IOError("Password incorrect") from err
+        if not local:
+            if not password:
+                password = input("password: ").strip()
+            self.client = pymongo.MongoClient(
+                "mongodb://writeAccess:" + password +
+                "@s7.tcm.phy.private.cam.ac.uk/proteinnetworks",
+                serverSelectionTimeoutMS=1000)
+            try:
+                # The ismaster command is cheap and does not require auth.
+                self.client.admin.command('ismaster')
+            except ConnectionFailure as err:
+                # Propagate the exception back up to whoever called it
+                raise IOError("Couldn't connect to the database") from err
+            except OperationFailure as err:
+                raise IOError("Password incorrect") from err
 
-        self.db = self.client.proteinnetworks
-        self.collection = self.db.proteinnetworks
+            self.db = self.client.proteinnetworks
+            self.collection = self.db.proteinnetworks
+        else:
+            self.collection = LocalCollection()
 
-    def extractEdgelist(self, pdbref, edgelisttype, hydrogenstatus, scaling, chainref=None):
+    def extractEdgelist(self,
+                        pdbref,
+                        edgelisttype,
+                        hydrogenstatus,
+                        scaling,
+                        chainref=None):
         """
         Attempt to extract the edgelist matching the given parameter set.
 
@@ -97,8 +106,13 @@ class Database:
         else:
             raise IOError("More than one edgelist found matching the query")
 
-    def depositEdgelist(self, pdbref, edgelisttype, hydrogenstatus, scaling,
-                        edges, chainref=None):
+    def depositEdgelist(self,
+                        pdbref,
+                        edgelisttype,
+                        hydrogenstatus,
+                        scaling,
+                        edges,
+                        chainref=None):
         """
         Deposit edgelist into the database.
 
@@ -207,8 +221,10 @@ class Database:
         # Check that the edgelistid maps to a database entry
         try:
             numberOfEdgelists = self.collection.find({
-                "_id": ObjectId(edgelistid),
-                "doctype": "edgelist"
+                "_id":
+                ObjectId(edgelistid),
+                "doctype":
+                "edgelist"
             }).count()
         except InvalidId as err:
             raise IOError("edgelistid not valid:", edgelistid) from err
@@ -302,8 +318,7 @@ class Database:
                 raise IOError(
                     "edgelist referenced corresponds to different PDB file.")
         # Validate the detection method (AFG or Infomap)
-        if partition['detectionmethod'] != "AFG" and partition[
-                'detectionmethod'] != "Infomap":
+        if partition['detectionmethod'] != "AFG" and partition['detectionmethod'] != "Infomap":
             raise IOError(
                 "Only AFG and Infomap are permitted as detection methods.")
         # Validate the r and N values (r float, N integer, must be one or the other)
@@ -336,7 +351,8 @@ class Database:
                             partition['data'].index(i + 1)
                     except ValueError as err:
                         raise IOError(
-                            'partition invalid: gaps found in labelling') from err
+                            'partition invalid: gaps found in labelling'
+                        ) from err
                 # if a nested list
                 elif all(isinstance(i, list) for i in partition['data']):
                     for column in partition['data']:
@@ -347,7 +363,8 @@ class Database:
                                 column.index(j + 1)
                         except ValueError as err:
                             raise IOError(
-                                'partition invalid: gaps found in labelling') from err
+                                'partition invalid: gaps found in labelling'
+                            ) from err
 
     def getNumberOfDocuments(self):
         """Return the total number of documents in the collection."""
@@ -364,8 +381,7 @@ class Database:
         if type(edgelist['pdbref']) != str or len(edgelist['pdbref']) != 4:
             raise IOError("PDB reference malformed: ", edgelist['pdbref'])
         # Validate edgelisttype
-        if (edgelist['edgelisttype'] != "atomic" and
-                edgelist['edgelisttype'] != "residue"):
+        if (edgelist['edgelisttype'] != "atomic" and edgelist['edgelisttype'] != "residue"):
             raise IOError("edgelisttype must be either 'atomic' or 'residue'")
         # Validate hydrogenstatus
         if (edgelist['hydrogenstatus'] != "noH" and
@@ -379,7 +395,6 @@ class Database:
         # Validate the chain reference
         # if edgelist.get("chainref") is not None and type(edgelist["chainref"]) != str:
         #     raise IOError("chain reference, if it exists, must be a string.")
-
         """
         Validate edges:
         Array correct shape, correct indexing, no self-loops.
@@ -422,8 +437,10 @@ class Database:
         # Check that the edgelistid maps to a database entry
         try:
             numberOfPartitions = self.collection.find({
-                "_id": ObjectId(partitionid),
-                "doctype": "partition"
+                "_id":
+                ObjectId(partitionid),
+                "doctype":
+                "partition"
             }).count()
         except InvalidId as err:
             raise IOError("edgelistid not valid:", partitionid) from err
@@ -514,8 +531,10 @@ class LocalCollection:
         """
         Return a 'cursor' which behaves like a generator with a count method.
         """
+
         class Cursor(list):
             """Extend the list class with a count method that does the same thing as len()."""
+
             def count(self):
                 return len(self)
 
@@ -526,7 +545,8 @@ class LocalCollection:
                     exists = value["$exists"]
                     # match if "exists" is False and key isn't in the record
                     # or if "exists" is True and key is in the record
-                    match = (exists and key in record) or (not exists and (key not in record))
+                    match = (exists and key in record) or (not exists and
+                                                           (key not in record))
                     if not match:
                         break
                 else:
@@ -553,8 +573,10 @@ class LocalCollection:
         Push a dictionary to the "database", adding a BSON ObjectId, and return a Result
         (with an inserted_id attribute).
         """
+
         class Result:
             """A container for the inserted_id, necessary to match the pymongo collection."""
+
             def __init__(self, id):
                 self.inserted_id = id
 

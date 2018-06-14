@@ -1,6 +1,5 @@
 """Stores functionality related to the generation and analysis of edgelists."""
 
-import sys
 import numpy as np
 import math
 import networkx as nx
@@ -41,12 +40,8 @@ class Network:
         if database:
             self.database = database
         else:
-            try:
-                self.database = Database()
-                print("successfully connected")
-            except IOError:
-                print("Couldn't connect to server")
-                sys.exit()
+            print("no database provided: using temporary store")
+            self.database = Database(local=True)
         # Attempt to extract the edgelist matching the given params
         doc = self.database.extractEdgelist(pdbref, edgelisttype,
                                             hydrogenstatus, scaling, chainref)
