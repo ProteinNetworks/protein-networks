@@ -283,6 +283,7 @@ class Database:
 
         cursor = self.collection.find(partition)
         numresults = cursor.count()
+        print(numresults)
         if numresults:
             raise IOError(
                 "Partition already exists in the database! Something has gone terribly wrong!"
@@ -541,6 +542,8 @@ class LocalCollection:
         subset = []
         for record in self.storageList:
             for key, value in query.items():
+                if key not in record:
+                    break
                 if type(value) == dict and "$exists" in value:
                     exists = value["$exists"]
                     # match if "exists" is False and key isn't in the record
@@ -573,6 +576,8 @@ class LocalCollection:
         """
         Push a dictionary to the "database", adding a BSON ObjectId, and return a Result
         (with an inserted_id attribute).
+        
+        If the record is already there, throw an IOError
         """
 
         class Result:
