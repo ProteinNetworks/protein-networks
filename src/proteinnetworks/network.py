@@ -6,6 +6,7 @@ import networkx as nx
 import warnings
 import subprocess
 import os
+import logging
 import matplotlib.pyplot as plt
 from .database import Database
 from .atomicradii import atomicRadii
@@ -40,7 +41,7 @@ class Network:
         if database:
             self.database = database
         else:
-            print("no database provided: using temporary store")
+            logging.warn("no database provided: using temporary store")
             self.database = Database(local=True)
         # Attempt to extract the edgelist matching the given params
         doc = self.database.extractEdgelist(pdbref, edgelisttype,
@@ -48,9 +49,9 @@ class Network:
         if doc:
             self.edgelist = doc['data']
             self.edgelistid = doc['_id']
-            print("edgelist found")
+            logging.info("edgelist found")
         else:
-            print("no edgelist fitting those parameters found: generating")
+            logging.info("no edgelist fitting those parameters found: generating")
             edgelist = self.generateEdgelist(pdbref, edgelisttype,
                                              hydrogenstatus, scaling, chainref)
             self.edgelist = edgelist

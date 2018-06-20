@@ -34,11 +34,13 @@ NB this might be too large for MongoDB to handle (>16MB)
 """
 
 import pymongo
+import datetime
+import urllib.request
+import logging
+
 from pymongo.errors import ConnectionFailure, OperationFailure, DuplicateKeyError
 from bson.errors import InvalidId
 from bson.objectid import ObjectId
-import datetime
-import urllib.request
 
 # import sys
 
@@ -147,7 +149,7 @@ class Database:
 
             self.validateEdgelist(edgelist)
 
-            print("adding edgelist to database...")
+            logging.info("adding edgelist to database...")
             result = self.collection.insert_one(edgelist)
             return result.inserted_id
 
@@ -205,7 +207,7 @@ class Database:
             "doctype": "pdbfile",
             "data": pdbfile,
         }
-        print("adding PDB file to database...")
+        logging.info("adding PDB file to database...")
         try:
             self.collection.insert_one(document)
         except DuplicateKeyError as err:
@@ -252,7 +254,7 @@ class Database:
             else:
                 raise IOError("More than one partition found")
         else:
-            print("No edgelist found with the given id")
+            logging.error("No edgelist found with the given id")
 
     def extractDocumentGivenId(self, documentid):
         """Return a document given an id. Return None if not found."""
@@ -283,7 +285,6 @@ class Database:
 
         cursor = self.collection.find(partition)
         numresults = cursor.count()
-        print(numresults)
         if numresults:
             raise IOError(
                 "Partition already exists in the database! Something has gone terribly wrong!"
@@ -294,7 +295,7 @@ class Database:
 
             self.validatePartition(partition)
 
-            print("adding partition to database...")
+            logging.info("adding partition to database...")
 
             result = self.collection.insert_one(partition)
             return result.inserted_id
@@ -463,7 +464,7 @@ class Database:
             else:
                 raise IOError("More than one partition found")
         else:
-            print("No partition found with the given id")
+            logging.error("No partition found with the given id")
 
     def depositSuperNetwork(self, pdbref, partitionid, level, data):
         """
@@ -488,7 +489,7 @@ class Database:
         else:
             supernetwork['data'] = data
 
-            print("adding supernetwork to database...")
+            logging.info("adding supernetwork to database...")
 
             result = self.collection.insert_one(supernetwork)
             return result.inserted_id
@@ -571,12 +572,12 @@ class LocalCollection:
         assert len(results) < 2
         if len(results) == 1:
             return results[0]
-        
+
     def insert_one(self, record):
         """
         Push a dictionary to the "database", adding a BSON ObjectId, and return a Result
         (with an inserted_id attribute).
-        
+
         If the record is already there, throw an IOError
         """
 

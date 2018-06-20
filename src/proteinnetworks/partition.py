@@ -1,11 +1,11 @@
 """Stores functionality related to the generation and analysis of community structures."""
 
-import sys
 import subprocess
 import numpy as np
 import os
 import networkx as nx
 import warnings
+import logging
 import matplotlib.pyplot as plt
 from palettable.colorbrewer.qualitative import Set3_12
 from .database import Database
@@ -50,7 +50,7 @@ class Partition:
         if database:
             self.database = database
         else:
-            print("no database provided: using temporary store")
+            logging.warn("no database provided: using temporary store")
             self.database = Database(local=True)
 
         # Attempt to extract the partition matching the given params
@@ -59,9 +59,9 @@ class Partition:
         if doc:
             self.data = doc['data']
             self.partitionid = doc['_id']
-            print("partition found")
+            logging.info("partition found")
         else:
-            print("no partition fitting those parameters found: generating")
+            logging.info("no partition fitting those parameters found: generating")
 
             data = self.generatePartition(pdbref, edgelistid, detectionmethod,
                                           r, N)

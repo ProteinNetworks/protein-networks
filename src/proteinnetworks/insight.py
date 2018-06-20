@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import warnings
 import itertools
 import math
+import logging
 from .partition import Partition
 from .network import Network
 from typing import List
@@ -44,7 +45,7 @@ class SuperNetwork:
                 pfamDomains = np.asarray(
                     inputPartition.getPFAMDomainArray(), dtype=int)
             except ValueError:
-                print("No PFAM entry -> cannot generate supernetwork")
+                logging.error("No PFAM entry -> cannot generate supernetwork")
                 raise ValueError
 
             maxJaccard = -1
@@ -52,15 +53,15 @@ class SuperNetwork:
             for i, col in enumerate(partition):
                 jaccard = getModifiedJaccard(pfamDomains,
                                              np.asarray(col, dtype=int))
-                print("Level {} has Jaccard {}".format(i, jaccard))
+                logging.info("Level {} has Jaccard {}".format(i, jaccard))
                 if jaccard > maxJaccard:
                     maxJaccard = jaccard
                     maxI = i
-            print("Using level {}".format(maxI))
+            logging.info("Using level {}".format(maxI))
             self.level = maxI
 
         else:
-            print("Using specified level:", level)
+            logging.info("Using specified level:", level)
             self.level = int(level)
 
         partition = partition[self.level]
@@ -71,7 +72,7 @@ class SuperNetwork:
 
         if doc:
             self.data = doc['data']
-            print("supernetwork found")
+            logging.info("supernetwork found")
 
         else:
             # Generate the supernetwork
@@ -493,11 +494,11 @@ def generateNullModel(testPartition):
     assert set(nullModel) == set(testPartition)
     assert len(nullModel) == len(testPartition)
     if nullModelNumBoundaries != numBoundaries:
-        print(newBoundaries)
-        print(newCommunities)
-        print(testPartition.tolist())
-        print()
-        print(nullModel.tolist())
+        logging.error(newBoundaries)
+        logging.error(newCommunities)
+        logging.error(testPartition.tolist())
+        logging.error()
+        logging.error(nullModel.tolist())
         raise NotImplementedError
     return nullModel
 
@@ -742,15 +743,18 @@ def getTreeSimilarity(partition1, partition2):
     for node in leafNodes1:
         tree1.nodes[node]['childrenLabels'] = []
         tree1.nodes[node]['isoLabel'] = 0
-        tree1.nodes[node]["size"] = 1  # Assumes all initial leaf nodes are of size 1
+        tree1.nodes[node][
+            "size"] = 1  # Assumes all initial leaf nodes are of size 1
         # numberOfLabelledNodes += 1
         bottomLevel = tree1.nodes[node]["level"]
     print(json.dumps(list(tree1.nodes(data=True)), indent=2))
     # print(sizeOfTree)
     # print(numberOfLabelledNodes)
     print(bottomLevel)
-    for level in range(bottomLevel-1, 0, -1):
-        nodesAtLevel = [x for x, y in tree1.nodes(data=True) if y['level']==level]
+    for level in range(bottomLevel - 1, 0, -1):
+        nodesAtLevel = [
+            x for x, y in tree1.nodes(data=True) if y['level'] == level
+        ]
         print(nodesAtLevel)
         for node in nodesAtLevel:
             print(tree1.nodes(data=True)[node])
@@ -786,7 +790,7 @@ def toTree(data):
                 "level": i + 1,
                 "region": list(partition == community)
             }
-            G.add_node(nodeLabelCounter, level=i+1, children=[])
+            G.add_node(nodeLabelCounter, level=i + 1, children=[])
             # , region=list(partition == community)) leave off for now
             nodes.append(node)
             nodeLabelCounter += 1
@@ -810,11 +814,13 @@ def toTree(data):
                 edges.append(
                     [node['label'], prevLevelNode['label'], overlapSize])
 
-                G.add_edge(node['label'], prevLevelNode['label'], weight=overlapSize)
+                G.add_edge(
+                    node['label'], prevLevelNode['label'], weight=overlapSize)
                 # print(G.nodes[prevLevelNode['label']])
                 # print(G.nodes[prevLevelNode['label']]['children'])
                 # print(node['label'])
-                G.nodes[prevLevelNode['label']]['children'].append(node['label'])
+                G.nodes[prevLevelNode['label']]['children'].append(
+                    node['label'])
 
     # return edges
     return G
