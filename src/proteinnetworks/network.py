@@ -12,6 +12,9 @@ from .database import Database
 from .atomicradii import atomicRadii
 
 
+logger = logging.getLogger(__name__)
+
+
 class Network:
     """Holds a edgelist and its parameters, and offers network inspection methods."""
 
@@ -41,7 +44,7 @@ class Network:
         if database:
             self.database = database
         else:
-            logging.warn("no database provided: using temporary store")
+            logger.warn("no database provided: using temporary store")
             self.database = Database(local=True)
         # Attempt to extract the edgelist matching the given params
         doc = self.database.extractEdgelist(pdbref, edgelisttype,
@@ -49,9 +52,9 @@ class Network:
         if doc:
             self.edgelist = doc['data']
             self.edgelistid = doc['_id']
-            logging.info("edgelist found")
+            logger.info("edgelist found")
         else:
-            logging.info("no edgelist fitting those parameters found: generating")
+            logger.info("no edgelist fitting those parameters found: generating")
             edgelist = self.generateEdgelist(pdbref, edgelisttype,
                                              hydrogenstatus, scaling, chainref)
             self.edgelist = edgelist

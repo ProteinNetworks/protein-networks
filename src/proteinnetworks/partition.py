@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 from palettable.colorbrewer.qualitative import Set3_12
 from .database import Database
 
+logger = logging.getLogger(__name__)
+
 
 class Partition:
     """
@@ -50,7 +52,7 @@ class Partition:
         if database:
             self.database = database
         else:
-            logging.warn("no database provided: using temporary store")
+            logger.warn("no database provided: using temporary store")
             self.database = Database(local=True)
 
         # Attempt to extract the partition matching the given params
@@ -59,9 +61,9 @@ class Partition:
         if doc:
             self.data = doc['data']
             self.partitionid = doc['_id']
-            logging.info("partition found")
+            logger.info("partition found")
         else:
-            logging.info("no partition fitting those parameters found: generating")
+            logger.info("no partition fitting those parameters found: generating")
 
             data = self.generatePartition(pdbref, edgelistid, detectionmethod,
                                           r, N)

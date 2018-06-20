@@ -42,7 +42,15 @@ from pymongo.errors import ConnectionFailure, OperationFailure, DuplicateKeyErro
 from bson.errors import InvalidId
 from bson.objectid import ObjectId
 
-# import sys
+logger = logging.getLogger(__name__)
+# ch = logging.StreamHandler()
+# ch.setLevel(logging.getLogger().getEffectiveLevel())
+# # create formatter and add it to the handlers
+# formatter = logging.Formatter(
+#     '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+# ch.setFormatter(formatter)
+# # add the handlers to logger
+# logger.addHandler(ch)
 
 
 class Database:
@@ -149,7 +157,7 @@ class Database:
 
             self.validateEdgelist(edgelist)
 
-            logging.info("adding edgelist to database...")
+            logger.info("adding edgelist to database...")
             result = self.collection.insert_one(edgelist)
             return result.inserted_id
 
@@ -207,7 +215,7 @@ class Database:
             "doctype": "pdbfile",
             "data": pdbfile,
         }
-        logging.info("adding PDB file to database...")
+        logger.info("adding PDB file to database...")
         try:
             self.collection.insert_one(document)
         except DuplicateKeyError as err:
@@ -254,7 +262,7 @@ class Database:
             else:
                 raise IOError("More than one partition found")
         else:
-            logging.error("No edgelist found with the given id")
+            logger.error("No edgelist found with the given id")
 
     def extractDocumentGivenId(self, documentid):
         """Return a document given an id. Return None if not found."""
@@ -295,7 +303,7 @@ class Database:
 
             self.validatePartition(partition)
 
-            logging.info("adding partition to database...")
+            logger.info("adding partition to database...")
 
             result = self.collection.insert_one(partition)
             return result.inserted_id
@@ -464,7 +472,7 @@ class Database:
             else:
                 raise IOError("More than one partition found")
         else:
-            logging.error("No partition found with the given id")
+            logger.error("No partition found with the given id")
 
     def depositSuperNetwork(self, pdbref, partitionid, level, data):
         """
@@ -489,7 +497,7 @@ class Database:
         else:
             supernetwork['data'] = data
 
-            logging.info("adding supernetwork to database...")
+            logger.info("adding supernetwork to database...")
 
             result = self.collection.insert_one(supernetwork)
             return result.inserted_id

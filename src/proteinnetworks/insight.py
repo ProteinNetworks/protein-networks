@@ -18,6 +18,8 @@ from .partition import Partition
 from .network import Network
 from typing import List
 
+logger = logging.getLogger(__name__)
+
 
 class SuperNetwork:
     """
@@ -45,7 +47,7 @@ class SuperNetwork:
                 pfamDomains = np.asarray(
                     inputPartition.getPFAMDomainArray(), dtype=int)
             except ValueError:
-                logging.error("No PFAM entry -> cannot generate supernetwork")
+                logger.error("No PFAM entry -> cannot generate supernetwork")
                 raise ValueError
 
             maxJaccard = -1
@@ -53,15 +55,15 @@ class SuperNetwork:
             for i, col in enumerate(partition):
                 jaccard = getModifiedJaccard(pfamDomains,
                                              np.asarray(col, dtype=int))
-                logging.info("Level {} has Jaccard {}".format(i, jaccard))
+                logger.info("Level {} has Jaccard {}".format(i, jaccard))
                 if jaccard > maxJaccard:
                     maxJaccard = jaccard
                     maxI = i
-            logging.info("Using level {}".format(maxI))
+            logger.info("Using level {}".format(maxI))
             self.level = maxI
 
         else:
-            logging.info("Using specified level:", level)
+            logger.info("Using specified level:", level)
             self.level = int(level)
 
         partition = partition[self.level]
@@ -72,7 +74,7 @@ class SuperNetwork:
 
         if doc:
             self.data = doc['data']
-            logging.info("supernetwork found")
+            logger.info("supernetwork found")
 
         else:
             # Generate the supernetwork
@@ -494,11 +496,11 @@ def generateNullModel(testPartition):
     assert set(nullModel) == set(testPartition)
     assert len(nullModel) == len(testPartition)
     if nullModelNumBoundaries != numBoundaries:
-        logging.error(newBoundaries)
-        logging.error(newCommunities)
-        logging.error(testPartition.tolist())
-        logging.error()
-        logging.error(nullModel.tolist())
+        logger.error(newBoundaries)
+        logger.error(newCommunities)
+        logger.error(testPartition.tolist())
+        logger.error()
+        logger.error(nullModel.tolist())
         raise NotImplementedError
     return nullModel
 
