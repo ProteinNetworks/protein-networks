@@ -7,10 +7,11 @@ import networkx as nx
 import warnings
 import logging
 import matplotlib.pyplot as plt
+import re
 from palettable.colorbrewer.qualitative import Set3_12
 from .database import Database
 
-logger = logging.getLogger(__name__)
+loggingLevels = {0: logging.ERROR, 1: logging.WARNING, 2: logging.INFO, 3: logging.DEBUG}
 
 
 class Partition:
@@ -26,7 +27,8 @@ class Partition:
                  detectionmethod,
                  r=-1,
                  N=-1,
-                 database=None):
+                 database=None,
+                 verbosity=1):
         """
         Initialise the Partition with a given set of params.
 
@@ -44,6 +46,19 @@ class Partition:
         self.pdbref = pdbref
         self.edgelistid = edgelistid
         self.detectionmethod = detectionmethod
+
+        # Reset the verbosity
+        for handler in logging.root.handlers[:]:
+            logging.root.removeHandler(handler)
+        logger = logging.getLogger(__name__)
+        logger.setLevel(loggingLevels[verbosity])
+        for handler in logger.handlers[:]:
+            logger.removeHandler(handler)
+
+        ch = logging.StreamHandler()
+        # ch.setFormatter()
+        logger.addHandler(ch)
+
         if r != -1:
             self.r = r
         if N != -1:
@@ -72,6 +87,9 @@ class Partition:
             self.partitionid = self.database.depositPartition(
                 pdbref, edgelistid, detectionmethod, r, N, data)
 
+        # print("TEMPORARY: CHECK INFOMAP COMPRESSION")
+        # data = self.generatePartition(pdbref, edgelistid, detectionmethod, r, N)
+
     def generatePartition(self, pdbref, edgelistid, detectionmethod, r, N):
         """Generate a community structure using the parameters supplied."""
         # Get the network.
@@ -86,6 +104,14 @@ class Partition:
             "Infomap", "temp.dat", ".", "-i", "link-list", "--tree", "-N",
             str(N), "--silent"
         ])
+        # with open("temp.tree") as flines:
+        #     firstLine = next(flines)
+        #     # print(firstLine)
+        #     matches = re.findall("(?<=codelength )[0-9]\.[0-9]+", firstLine)
+        #     print("initial codelength:", matches[0], end=" ")
+        #     print("final codelength:", matches[1])
+        #     print("difference", (float(matches[0]) - float(matches[1])) / float(matches[0]))
+
         partition = treeFileToNestedLists("temp.tree")
         # Remove temporary files
         os.remove("temp.dat")

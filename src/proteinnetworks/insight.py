@@ -18,7 +18,7 @@ from .partition import Partition
 from .network import Network
 from typing import List
 
-logger = logging.getLogger(__name__)
+loggingLevels = {0: logging.ERROR, 1: logging.WARNING, 2: logging.INFO, 3: logging.DEBUG}
 
 
 class SuperNetwork:
@@ -29,12 +29,25 @@ class SuperNetwork:
     Includes a single-chain reference, for use in the getIsomorphs function
     """
 
-    def __init__(self, inputPartition, level=None):
+    def __init__(self, inputPartition, level=None, verbosity=1):
         """Generate the network from an existing Partition."""
         # Get the input partition and edgelist
         self.pdbref = inputPartition.pdbref  # Save the details on the partition used
         self.database = inputPartition.database
         self.partitionid = inputPartition.partitionid
+
+        # Reset the verbosity
+        for handler in logging.root.handlers[:]:
+            logging.root.removeHandler(handler)
+        logger = logging.getLogger(__name__)
+        logger.setLevel(loggingLevels[verbosity])
+        for handler in logger.handlers[:]:
+            logger.removeHandler(handler)
+
+        ch = logging.StreamHandler()
+        # ch.setFormatter()
+        logger.addHandler(ch)
+
         partition = inputPartition.data
         edgelistDoc = inputPartition.database.extractDocumentGivenId(
             inputPartition.edgelistid)
@@ -496,11 +509,11 @@ def generateNullModel(testPartition):
     assert set(nullModel) == set(testPartition)
     assert len(nullModel) == len(testPartition)
     if nullModelNumBoundaries != numBoundaries:
-        logger.error(newBoundaries)
-        logger.error(newCommunities)
-        logger.error(testPartition.tolist())
-        logger.error()
-        logger.error(nullModel.tolist())
+        logging.error(newBoundaries)
+        logging.error(newCommunities)
+        logging.error(testPartition.tolist())
+        logging.error()
+        logging.error(nullModel.tolist())
         raise NotImplementedError
     return nullModel
 

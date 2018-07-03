@@ -12,7 +12,7 @@ from .database import Database
 from .atomicradii import atomicRadii
 
 
-logger = logging.getLogger(__name__)
+loggingLevels = {0: logging.ERROR, 1: logging.WARNING, 2: logging.INFO, 3: logging.DEBUG}
 
 
 class Network:
@@ -24,7 +24,8 @@ class Network:
                  hydrogenstatus,
                  scaling,
                  chainref=None,
-                 database=None):
+                 database=None,
+                 verbosity=1):
         """
         Initialise the edgelist with a given parameter set.
 
@@ -40,11 +41,23 @@ class Network:
         self.hydrogenstatus = hydrogenstatus
         self.pdbref = pdbref
         self.chainref = chainref
+
+        # Reset the verbosity
+        for handler in logging.root.handlers[:]:
+            logging.root.removeHandler(handler)
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(loggingLevels[verbosity])
+        for handler in self.logger.handlers[:]:
+            self.logger.removeHandler(handler)
+
+        ch = logging.StreamHandler()
+        # ch.setFormatter()
+        self.logger.addHandler(ch)
         # Try to connect to the database
         if database:
             self.database = database
         else:
-            logger.warn("no database provided: using temporary store")
+            self.logger.warn("no database provided: using temporary store")
             self.database = Database(local=True)
         # Attempt to extract the edgelist matching the given params
         doc = self.database.extractEdgelist(pdbref, edgelisttype,
@@ -52,9 +65,9 @@ class Network:
         if doc:
             self.edgelist = doc['data']
             self.edgelistid = doc['_id']
-            logger.info("edgelist found")
+            self.logger.info("edgelist found")
         else:
-            logger.info("no edgelist fitting those parameters found: generating")
+            self.logger.info("no edgelist fitting those parameters found: generating")
             edgelist = self.generateEdgelist(pdbref, edgelisttype,
                                              hydrogenstatus, scaling, chainref)
             self.edgelist = edgelist

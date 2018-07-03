@@ -42,7 +42,10 @@ from pymongo.errors import ConnectionFailure, OperationFailure, DuplicateKeyErro
 from bson.errors import InvalidId
 from bson.objectid import ObjectId
 
-logger = logging.getLogger(__name__)
+
+loggingLevels = {0: logging.ERROR, 1: logging.WARNING, 2: logging.INFO, 3: logging.DEBUG}
+
+
 # ch = logging.StreamHandler()
 # ch.setLevel(logging.getLogger().getEffectiveLevel())
 # # create formatter and add it to the handlers
@@ -56,12 +59,24 @@ logger = logging.getLogger(__name__)
 class Database:
     """A wrapper around MongoDB."""
 
-    def __init__(self, password="", local=False):
+    def __init__(self, password="", local=False, verbosity=1):
         """Connect to MongoDB, and ensure that it's running."""
-        # Server is stored locally; if I can't find it in 1 second its not running.
+        # Reset the verbosity
+        for handler in logging.root.handlers[:]:
+            logging.root.removeHandler(handler)
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(loggingLevels[verbosity])
+        for handler in self.logger.handlers[:]:
+            self.logger.removeHandler(handler)
+
+        ch = logging.StreamHandler()
+        # ch.setFormatter()
+        self.logger.addHandler(ch)
+
         if not local:
             if not password:
                 password = input("password: ").strip()
+            # Server is stored locally; if I can't find it in 1 second its not running.
             self.client = pymongo.MongoClient(
                 "mongodb://writeAccess:" + password +
                 "@s7.tcm.phy.private.cam.ac.uk/proteinnetworks",
@@ -77,6 +92,7 @@ class Database:
 
             self.db = self.client.proteinnetworks
             self.collection = self.db.proteinnetworks
+
         else:
             self.collection = LocalCollection()
 
@@ -157,7 +173,7 @@ class Database:
 
             self.validateEdgelist(edgelist)
 
-            logger.info("adding edgelist to database...")
+            self.logger.info("adding edgelist to database...")
             result = self.collection.insert_one(edgelist)
             return result.inserted_id
 
@@ -215,7 +231,7 @@ class Database:
             "doctype": "pdbfile",
             "data": pdbfile,
         }
-        logger.info("adding PDB file to database...")
+        self.logger.info("adding PDB file to database...")
         try:
             self.collection.insert_one(document)
         except DuplicateKeyError as err:
@@ -262,7 +278,7 @@ class Database:
             else:
                 raise IOError("More than one partition found")
         else:
-            logger.error("No edgelist found with the given id")
+            self.logger.error("No edgelist found with the given id")
 
     def extractDocumentGivenId(self, documentid):
         """Return a document given an id. Return None if not found."""
@@ -303,7 +319,7 @@ class Database:
 
             self.validatePartition(partition)
 
-            logger.info("adding partition to database...")
+            self.logger.info("adding partition to database...")
 
             result = self.collection.insert_one(partition)
             return result.inserted_id
@@ -472,7 +488,7 @@ class Database:
             else:
                 raise IOError("More than one partition found")
         else:
-            logger.error("No partition found with the given id")
+            self.logger.error("No partition found with the given id")
 
     def depositSuperNetwork(self, pdbref, partitionid, level, data):
         """
@@ -497,7 +513,7 @@ class Database:
         else:
             supernetwork['data'] = data
 
-            logger.info("adding supernetwork to database...")
+            self.logger.info("adding supernetwork to database...")
 
             result = self.collection.insert_one(supernetwork)
             return result.inserted_id
