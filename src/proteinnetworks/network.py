@@ -171,7 +171,9 @@ class Network:
                 i, j = row
                 edges.append([i, j, weight])
             edges.sort()
-
+        else:
+            raise RuntimeError("edgelist type must be 'atomic' or 'residue'")
+            # need to handle this in a more principled manner, with full validation.
         return edges
 
     def draw(self):

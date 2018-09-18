@@ -238,3 +238,33 @@ def test_network_getadjacencymatrix(mock_database):
                                [0, 56, 70, 0, 0],
                                [0, 0, 23, 0, 0]], dtype=int)
     assert np.array_equal(adj, expected_adj)
+
+
+"""
+Tests for Network.getNetwork()
+
+Assumes a well-formed Network instance.
+
+Inputs: None.
+Member Data Used: Edgelist
+Returns: a NetworkX Graph.
+
+So far, only tests successful cases (it's a simple function) 
+"""
+
+
+def test_network_getnetwork_wellformededgelist(mock_database):
+    """Test that if the edgelist is already present, it is successfully generated."""
+    db = proteinnetworks.database.Database(password="bla")
+    inputArgs = {
+        "scaling": 4.5,
+        "edgelisttype": "residue",
+        "hydrogenstatus": "noH",
+        "pdbref": "2bla",
+        "database": db,
+        "chainref": "A"
+    }
+    pn = proteinnetworks.network.Network(**inputArgs)
+    G = pn.getNetwork()
+    assert G.number_of_nodes() == 11
+    assert G.number_of_edges() == 24
