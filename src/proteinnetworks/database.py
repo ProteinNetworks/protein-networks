@@ -160,7 +160,7 @@ class Database:
             # Explictly pass a "doesn't have a chainref field" to the query
             temp = edgelist.copy()
             temp['chainref'] = {"$exists": False}
-            cursor = self.collection.find(edgelist)
+            cursor = self.collection.find(temp)
 
         numresults = cursor.count()
         if numresults:
@@ -419,8 +419,11 @@ class Database:
         if type(edgelist['scaling']) != float or edgelist['scaling'] < 0.0:
             raise IOError("scaling must be a non-negative float")
         # Validate the chain reference
-        # if edgelist.get("chainref") is not None and type(edgelist["chainref"]) != str:
-        #     raise IOError("chain reference, if it exists, must be a string.")
+        # It can either be a dict with {"$exists": False} or a single char, or nothing.
+        if "chainref" in edgelist:
+            value = edgelist["chainref"]
+            if not ((type(value) == str and len(value) == 1) or value == {"$exists": False}):
+                raise IOError("chain reference, if it exists, must be a single char or a mongoDB query.")
         """
         Validate edges:
         Array correct shape, correct indexing, no self-loops.

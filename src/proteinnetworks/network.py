@@ -289,6 +289,8 @@ def extractAtomicData(pdbdata, chainref=None):
     else:
         pull all ATOM records matching the chainref, and assert that the arrays
         to be returned are non-empty.
+        if the arrays are empty (i.e. a chainref has been given that the pdb doesn't
+        have) then throw a RuntimeError
     """
     positions = []
     elements = []
@@ -328,5 +330,6 @@ def extractAtomicData(pdbdata, chainref=None):
                 elements.append(linelist[13].strip())
                 residues.append(residueCounter)
         positions = np.asarray(positions, dtype=float)
-        assert (positions.any() and elements and residues)
+        if not (positions.any() and elements and residues):
+            raise RuntimeError
         return positions, elements, residues

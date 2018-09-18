@@ -14,6 +14,7 @@ import proteinnetworks.network
 import proteinnetworks.database
 from bson.objectid import ObjectId
 import numpy as np
+import pytest
 """Test the __init__() function in the network.py module.
 
 Inputs: pdbref, edgelisttype, hydrogenstatus, scaling,
@@ -65,23 +66,64 @@ def test_network_init_edgelist_not_in_database(mock_database):
 
 def test_network_init_edgelist_in_database_singlechain(mock_database):
     """Test that if the edgelist is already present, it is successfully generated."""
-    pass
+    db = proteinnetworks.database.Database(password="bla")
+    inputArgs = {
+        "scaling": 4.5,
+        "edgelisttype": "residue",
+        "hydrogenstatus": "noH",
+        "pdbref": "2bla",
+        "database": db,
+        "chainref": "A"
+    }
+    pn = proteinnetworks.network.Network(**inputArgs)
+    assert type(pn.edgelistid) == ObjectId
+    assert pn.edgelist == [[2, 1, 36], [3, 1, 18], [3, 2, 67], [4, 2, 35], [4, 3, 42], [5, 3, 57], [5, 4, 61], [6, 4, 12], [6, 5, 47], [7, 5, 16], [7, 6, 58], [8, 5, 2], [8, 6, 86], [8, 7, 45], [9, 6, 8], [9, 7, 24], [9, 8, 46], [10, 6, 32], [10, 7, 1], [10, 8, 36], [10, 9, 44], [11, 8, 6], [11, 9, 55], [11, 10, 52]]
 
 
 def test_network_init_edgelist_not_in_database_singlechain(mock_database):
     """Test when the edgelist must be generated from a multi-chain PDB file."""
-    pass
+    db = proteinnetworks.database.Database(password="bla")
+    inputArgs = {
+        "scaling": 4.5,
+        "edgelisttype": "residue",
+        "hydrogenstatus": "noH",
+        "pdbref": "2bla",
+        "database": db,
+        "chainref": "H"
+    }
+    pn = proteinnetworks.network.Network(**inputArgs)
+
+    assert pn.edgelist == [[2, 1, 44], [3, 1, 20], [3, 2, 47], [4, 2, 11], [4, 3, 36], [5, 3, 29], [5, 4, 50], [6, 4, 17], [6, 5, 35], [7, 5, 6], [7, 6, 23], [8, 6, 9], [8, 7, 27], [9, 6, 1], [9, 7, 11], [9, 8, 28], [10, 7, 1], [10, 8, 36], [10, 9, 27], [11, 8, 25], [11, 9, 12], [11, 10, 50]]
 
 
 def test_network_init_edgelist_singlechain_chainref_invalid(mock_database):
     """Test when the chainref supplied is invalid (i.e. not a single char)."""
-    pass
+    db = proteinnetworks.database.Database(password="bla")
+    inputArgs = {
+        "scaling": 4.5,
+        "edgelisttype": "residue",
+        "hydrogenstatus": "noH",
+        "pdbref": "2bla",
+        "database": db,
+        "chainref": "2bla"
+    }
+    with pytest.raises(IOError):
+        proteinnetworks.network.Network(**inputArgs)
 
 
 def test_network_init_edgelist_singlechain_chainref_not_found(mock_database):
     """Test when the chainref supplied is not present (i.e. no ATOM lines contain that chain)."""
-    pass
-
+    db = proteinnetworks.database.Database(password="bla")
+    inputArgs = {
+        "scaling": 4.5,
+        "edgelisttype": "residue",
+        "hydrogenstatus": "noH",
+        "pdbref": "2bla",
+        "database": db,
+        "chainref": "K"
+    }
+    with pytest.raises(RuntimeError):
+        proteinnetworks.network.Network(**inputArgs)
 
 """
 Tests for generateEdgelist

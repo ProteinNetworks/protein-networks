@@ -413,6 +413,23 @@ data = [{
     ],
     '_id': ObjectId('48dbd13f0f677d54224a01d9'),
     'pdbref': '2bla'
+},
+{
+    # multichain test pdb file
+    'pdbref': '2bla',
+    'chainref': "A",
+    'data': [[2, 1, 36], [3, 1, 18], [3, 2, 67], [4, 2, 35],
+             [4, 3, 42], [5, 3, 57], [5, 4, 61], [6, 4, 12],
+             [6, 5, 47], [7, 5, 16], [7, 6, 58], [8, 5, 2],
+             [8, 6, 86], [8, 7, 45], [9, 6, 8], [9, 7, 24],
+             [9, 8, 46], [10, 6, 32], [10, 7, 1], [10, 8, 36],
+             [10, 9, 44], [11, 8, 6], [11, 9, 55], [11, 10, 52]],
+    'doctype': 'edgelist',
+    'edgelisttype': 'residue',
+    'hydrogenstatus': 'noH',
+    '_id': ObjectId('58dcf13fef677d54335a01da'),
+    'date': datetime.datetime(2018, 3, 29, 16, 26, 39, 894000),
+    'scaling': 4.5
 }
 ]
 

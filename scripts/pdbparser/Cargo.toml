@@ -1,0 +1,7 @@
+[package]
+name = "pdbparser"
+version = "0.1.0"
+authors = ["Will Grant <wpg23@cam.ac.uk>"]
+
+[dependencies]
+clap="*"

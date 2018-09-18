@@ -43,7 +43,7 @@ def test_database_getnumberofdocuments(mock_database):
     to test.
     """
     db = proteinnetworks.database.Database(password="bla")
-    assert db.getNumberOfDocuments() == 5
+    assert db.getNumberOfDocuments() == 6
 
 
 """
@@ -1027,7 +1027,7 @@ def test_local_database_depositpartition_doc_already_present(mock_database):
         'detectionmethod': 'Infomap',
         'r': -1
     }
-    
+
     with pytest.raises(IOError):
         db.depositPartition(**depositionArgs)
 
@@ -1038,9 +1038,9 @@ def test_local_database_depositpartition_doc_already_present(mock_database):
 # output - a document
 
 # Tests:
-#         - Does it return the right thing given a correct id?
-#         - Does it fail sensibly given an incorrect id? (i.e one that doesn't exist in the database)
-#         - Does it fail sensibly given a super-incorrect id?
+#   - Does it return the right thing given a correct id?
+#   - Does it fail sensibly given an incorrect id? (i.e one that doesn't exist in the database)
+#   - Does it fail sensibly given a super-incorrect id?
 
 # Again, a lightweight wrapper around a mocked method, so can't test too hard.
 # """
