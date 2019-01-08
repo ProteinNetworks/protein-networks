@@ -127,7 +127,6 @@ class Network:
             pdbdata = self.database.fetchPDBFileFromWeb(pdbref)
         positions, elements, residues = extractAtomicData(pdbdata, chainref)
         assert len(positions) == len(residues) == len(elements)
-
         # get matrix of square distances
         distance_squared = np.sum(
             (positions[:, np.newaxis, :] - positions[np.newaxis, :, :])**2,
@@ -312,7 +311,10 @@ def extractAtomicData(pdbdata, chainref=None):
                 positions.append(
                     [linelist[30:38], linelist[38:46], linelist[46:54]])
                 # elements.append(linelist[76:78].strip())
-                elements.append(linelist[13].strip())
+                if linelist[12].strip():
+                    elements.append(linelist[12])
+                else:
+                    elements.append(linelist[13])
                 residues.append(residueCounter)
         positions = np.asarray(positions, dtype=float)
         return positions, elements, residues
@@ -329,7 +331,10 @@ def extractAtomicData(pdbdata, chainref=None):
                 positions.append(
                     [linelist[30:38], linelist[38:46], linelist[46:54]])
                 # elements.append(linelist[76:78].strip())
-                elements.append(linelist[13].strip())
+                if linelist[12].strip():
+                    elements.append(linelist[12])
+                else:
+                    elements.append(linelist[13])
                 residues.append(residueCounter)
         positions = np.asarray(positions, dtype=float)
         if not (positions.any() and elements and residues):

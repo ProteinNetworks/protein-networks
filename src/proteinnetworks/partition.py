@@ -67,8 +67,7 @@ class Partition:
         if database:
             self.database = database
         else:
-            logger.warn("no database provided: using temporary store")
-            self.database = Database(local=True)
+            raise IOError("No database provided: hence no networks can be used.")
 
         # Attempt to extract the partition matching the given params
         doc = self.database.extractPartition(pdbref, edgelistid,
@@ -180,7 +179,7 @@ class Partition:
         # Get the chain ID, start residue and end residue for the protein.
         mappings = self.database.extractMappings(
             self.pdbref, mappingtype="PFAM")
-        if not mappings:
+        if mappings.count() == 0:
             raise ValueError("No PFAM data found for protein:", self.pdbref)
         else:
             residues = [x['data'] for x in mappings]

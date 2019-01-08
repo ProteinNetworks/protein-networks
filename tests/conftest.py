@@ -430,7 +430,20 @@ data = [{
     '_id': ObjectId('58dcf13fef677d54335a01da'),
     'date': datetime.datetime(2018, 3, 29, 16, 26, 39, 894000),
     'scaling': 4.5
+},
+{
+    # PFAM mapping
+    "pdbref": "1ubq",
+    "doctype": "mapping",
+    "mappingtype": "PFAM",
+    "data": {
+        "chainid": "A",
+        "startresidue": 1,
+        "endresidue": 3,
+        "pfamref": "bla"
+    }
 }
+
 ]
 
 

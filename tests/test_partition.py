@@ -25,7 +25,7 @@ inputs: pdbref, edgelistid, detectionmethod, r, N.
 outputs: a Partition
 
 Options: - params legit, partition in database
-         - params malformed (will be picked up by DB class)
+         - params malformed (will be picked up by validatePartition)
          - params legit, partition not in database
 """
 
@@ -64,6 +64,40 @@ def test_partition_init_partition_not_in_database(mock_database, mock_subprocess
     assert type(partition.partitionid) == ObjectId
 
 
+# def test_partition_init_partition_in_database_local(mock_database):
+#     """Test that if the partition is in the DB, it is extracted successfully."""
+#     db = proteinnetworks.database.Database(password="bla")
+#     partitionArgs = {
+#         'pdbref': '1ubq',
+#         'N': 10,
+#         'edgelistid': ObjectId('58dbe03fef677d54224a01da'),
+#         'detectionmethod': 'Infomap',
+#         'r': -1,
+#         "database": db
+#     }
+#     partition = proteinnetworks.partition.Partition(**partitionArgs)
+#     assert type(partition.partitionid) == ObjectId
+
+
+def test_partition_init_partition_no_database_provided(mock_database, mock_subprocess):
+    """
+    Test that if the partition is not in the DB, it is generated successfully, with
+    a tmeporary copy of a database
+
+    Uses a mocked community detection method.
+    """
+
+    partitionArgs = {
+        'pdbref': '2vc5',
+        'N': 1,
+        'edgelistid': ObjectId("58dbe03fef677d54224a01da"),
+        'detectionmethod': 'Infomap',
+        'r': -1
+    }
+    with pytest.raises(IOError):
+        partition = proteinnetworks.partition.Partition(**partitionArgs)
+    
+
 """
 Tests for the treeFileToNestedLists function (not a method)
 
@@ -94,3 +128,54 @@ def test_partition_treefiletonestedlists_error(mock_database, mock_subprocess):
     """
     with pytest.raises(FileNotFoundError):
         proteinnetworks.partition.treeFileToNestedLists("temp2.tree")
+
+
+"""
+tests for getPFAMDomainArray()
+
+The code will look for PFAM domains in the database . If it can't find any it'll 
+throw a value error.
+Malformed partitions should be caught
+"""
+
+def test_partition_getpfamdomains_valid_pdb(mock_database):
+    """
+    Test that if a PFAM domain is found in the database, then
+    the pfam domain array is correctly returned.
+    """
+    db = proteinnetworks.database.Database(password="bla")
+    partitionArgs = {
+        'pdbref': '1ubq',
+        'N': 10,
+        'edgelistid': ObjectId('58dbe03fef677d54224a01da'),
+        'detectionmethod': 'Infomap',
+        'r': -1,
+        "database": db
+    }
+    partition = proteinnetworks.partition.Partition(**partitionArgs)
+    array = partition.getPFAMDomainArray()
+    for element in array[:3]:
+        assert element == 2
+    for element in array[3:]:
+        assert element == 1
+    
+
+
+def test_partition_getpfamdomains_invalid_pdb(mock_database):
+    """
+    Test that if no PFAM domains are located in the database, then
+    no array is returned and an exception is thrown.
+    """
+    db = proteinnetworks.database.Database(password="bla")
+    partitionArgs = {
+        'pdbref': '2vcr',
+        'N': 10,
+        'edgelistid': ObjectId('58dcf13fef677d54224a01da'),
+        'detectionmethod': 'Infomap',
+        'r': -1,
+        "database": db
+    }
+    partition = proteinnetworks.partition.Partition(**partitionArgs)
+    with pytest.raises(ValueError):
+        array = partition.getPFAMDomainArray()
+    

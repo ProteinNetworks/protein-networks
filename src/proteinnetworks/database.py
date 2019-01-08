@@ -443,6 +443,7 @@ class Database:
                 if edge[0] == edge[1]:
                     raise IOError("No self-loops permitted")
             if smallestNode != 1:
+                print(smallestNode)
                 raise IOError("Node labelling should start at 1")
 
     def extractMappings(self, pdbref, mappingtype):
