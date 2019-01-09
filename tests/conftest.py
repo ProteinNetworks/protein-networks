@@ -590,8 +590,10 @@ def mock_urlopen(monkeypatch):
 def mock_subprocess(monkeypatch):
     """Patch subprocess to avoid calling Infomap."""
     def writetempfile(array):
-        with open("temp.tree", mode='w') as flines:
-            flines.write("""# 'temp.dat . -i link-list --tree -N 1' -> 76 nodes partitioned in 0s from codelength 6.148295862 in one level to codelength 5.340246382 in 2 levels.
+        if array[0] == "Infomap":
+                
+            with open("temp.tree", mode='w') as flines:
+                flines.write("""# 'temp.dat . -i link-list --tree -N 1' -> 76 nodes partitioned in 0s from codelength 6.148295862 in one level to codelength 5.340246382 in 2 levels.
 # path flow name node:
 1:1 0.0207778 "4" 4
 1:2 0.0205627 "3" 3
@@ -670,6 +672,12 @@ def mock_subprocess(monkeypatch):
 7:8 0.00851759 "32" 32
 7:9 0.00597952 "35" 35
 """)
+        elif array[0] == "pymol":
+            print("pymol!")
+        else:
+            print("didn't hit the Infomap of Pymol statements")
+            raise ValueError
+
     monkeypatch.setattr("subprocess.run", writetempfile)
 
 
@@ -683,3 +691,17 @@ def mock_matplotlib(monkeypatch):
     def show():
         print("Mock plot used")
     monkeypatch.setattr("matplotlib.pyplot.show", show)
+
+
+
+# @pytest.fixture(autouse=True)
+# def mock_osremove(monkeypatch):
+#     """
+#     Patch os.remove so that the temporary PyMOL files are retained.
+    
+#     I'll then need to clean these files after checking them manually.    
+#     """
+#     def remove(path):
+#         print("Remove functionality has been monkeypatched; temp files retained")
+#         assert 0
+#     monkeypatch.setattr("os.remove", remove)

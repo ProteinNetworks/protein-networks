@@ -309,7 +309,7 @@ set ray_shadows, 0
 set surface_mode, 1
 set cartoon_side_chain_helper,on
 rebuild
-        """
+"""
 
         # If we are doing a single-chain analysis, cut out the other chains
         try:
