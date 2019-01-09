@@ -248,7 +248,13 @@ class Partition:
 
         if level != -1:
             i = level
-            col = self.data[i]
+            try:
+                col = self.data[i]
+            except IndexError as e:
+                logger = logging.getLogger(__name__)
+
+                logger.exception("Invalid choice of level")
+                raise IndexError("Invalid choice of level")
             numberOfCommunities = len(set(col))
             col = np.asarray(col, dtype=int)  # necessary for np.where()
             pymolCommand = "\n".join([

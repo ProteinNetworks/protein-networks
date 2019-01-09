@@ -59,5 +59,6 @@ def test_supernetwork_init_all_options_valid_no_level(mock_database):
         "database": db
     }
     partition = proteinnetworks.partition.Partition(**partitionArgs)  # Tested by partition tests
-    # superNetwork = proteinnetworks.insight.SuperNetwork(partition)
-    assert partition
+    superNetwork = proteinnetworks.insight.SuperNetwork(partition)
+    # Need to check that the partition is as expected
+    assert superNetwork

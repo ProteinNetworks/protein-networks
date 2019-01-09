@@ -348,3 +348,95 @@ save 1ubq.pse
     os.remove("temp.pdb")
     os.remove("temp.pml")
     # assert 0
+
+def test_partition_plotpymolstructure_valid_level(mock_database, monkeypatch):
+    """
+    Test the default settings work successfully by checking the generating pml file.
+    """
+    db = proteinnetworks.database.Database(password="bla")
+    partitionArgs = {
+        'pdbref': '1ubq',
+        'N': 10,
+        'edgelistid': ObjectId('58dbe03fef677d54224a01da'),
+        'detectionmethod': 'Infomap',
+        'r': -1,
+        "database": db
+    }
+    
+    removeBackup = os.remove
+    monkeypatch.setattr("os.remove", mock_osremove)
+    partition = proteinnetworks.partition.Partition(**partitionArgs)
+    partition.plotPymolStructure(level=0)
+    monkeypatch.setattr("os.remove", removeBackup)
+    # Inspect the temp.pml file
+
+    # Key points:
+    # - as many levels as there are Infomap levels
+    # - the correct number of residues
+    # - the correct colouring
+    
+    expectedPml = """load temp.pdb, 1ubq_0
+alter 1ubq_0 and (resi 18 or resi 19 or resi 20 or resi 21 or resi 22 or resi 23 or resi 24 or resi 51 or resi 52 or resi 53 or resi 54 or resi 55 or resi 56 or resi 57 or resi 58 or resi 59 or resi 60 or resi 61 ), b=0.16666666666666666
+alter 1ubq_0 and (resi 36 or resi 37 or resi 38 or resi 39 or resi 40 or resi 41 or resi 42 or resi 69 or resi 70 or resi 71 or resi 72 or resi 73 or resi 74 or resi 75 or resi 76 ), b=0.3333333333333333
+alter 1ubq_0 and (resi 1 or resi 2 or resi 3 or resi 4 or resi 14 or resi 15 or resi 16 or resi 17 or resi 62 or resi 63 or resi 64 or resi 65 ), b=0.5
+alter 1ubq_0 and (resi 43 or resi 44 or resi 45 or resi 46 or resi 47 or resi 48 or resi 49 or resi 50 or resi 66 or resi 67 or resi 68 ), b=0.6666666666666666
+alter 1ubq_0 and (resi 25 or resi 26 or resi 27 or resi 28 or resi 29 or resi 30 or resi 31 or resi 32 or resi 33 or resi 34 or resi 35 ), b=0.8333333333333334
+alter 1ubq_0 and (resi 5 or resi 6 or resi 7 or resi 8 or resi 9 or resi 10 or resi 11 or resi 12 or resi 13 ), b=1.0
+#formatting
+bg_color white
+hide all
+#show sticks
+show cartoon
+spectrum b, rainbow,  minimum=0, maximum=1
+set opaque_background=0
+set antialias = on
+set line_smooth = 1
+set depth_cue = 1
+set specular = 1
+set surface_quality = 1
+set stick_quality = 15
+set sphere_quality = 2
+set ray_trace_fog = 0.8
+set light = (-0.2,0,-1)
+
+set ray_shadows, 0
+set surface_mode, 1
+set cartoon_side_chain_helper,on
+rebuild
+save 1ubq.pse 
+"""   
+    with open("temp.pml") as flines:
+        generatedPml = flines.read()
+
+    assert generatedPml == expectedPml
+    
+    # Tidy
+    os.remove("temp.pdb")
+    os.remove("temp.pml")
+    # assert 0
+
+
+def test_partition_plotpymolstructure_invalid_level(mock_database, monkeypatch):
+    """
+    Test that invalid level choices (i.e. ints <0 or >1 in this case, or any non-int)
+    are rejected correctly.
+    """
+    db = proteinnetworks.database.Database(password="bla")
+    partitionArgs = {
+        'pdbref': '1ubq',
+        'N': 10,
+        'edgelistid': ObjectId('58dbe03fef677d54224a01da'),
+        'detectionmethod': 'Infomap',
+        'r': -1,
+        "database": db
+    }
+    
+    removeBackup = os.remove
+    monkeypatch.setattr("os.remove", mock_osremove)
+    partition = proteinnetworks.partition.Partition(**partitionArgs)
+    with pytest.raises(IndexError):
+        partition.plotPymolStructure(level=-10)
+
+    # assert 0
+
+    
