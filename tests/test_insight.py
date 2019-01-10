@@ -536,8 +536,41 @@ def test_getnmi_perfect_match():
 
 
 """
-getConductanceFromPartition
-getConductanceFromNodeSubset
+tests for getConductanceFromPartition
+
+inputs -> one Network, one Partition
+outputs -> a List of floats
+
+
+tests:
+invalid inputs:
+    - partition and network are for different systems
+
+- disconnected network
+- fully connected network
+- random partitions on the same network?
+"""
+
+
+
+
+"""
+tests for getConductanceFromNodeSubset
+
+inputs -> a 1d numpy array of true/false values and a 2d adjacency matrix
+
+outputs -> a float in [0,1]
+
+tests:
+invalid inputs:
+    - malformed node_subset?
+    - malformed adjacency matrix?
+- disconnected adj_matrix
+- fully connected adj_matrix
+- random node subsets 
+"""
+
+"""
 getModularityFromPartition
 getModularityFromAdjacencyMatrix
 edgelistToGraph
