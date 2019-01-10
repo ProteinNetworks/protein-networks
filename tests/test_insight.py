@@ -531,10 +531,8 @@ def test_getnmi_perfect_match():
         np.random.shuffle(randomPartition1)
         np.random.shuffle(randomPartition2)
 
-        print(randomPartition1)
-        print(randomPartition2)
         nmi = proteinnetworks.insight.getNMI(randomPartition1, randomPartition2)
-        assert nmi > 0 and nmi < 1
+        assert nmi >= 0 and nmi <= 1
 
 
 """
