@@ -345,8 +345,76 @@ def test_getmcs_disconnected_graphs():
 
 
 """
-getZScore
-getShannonEntropy
+Tests for getZscore
+
+inputs -> two arrays & a number of trials
+Output -> a float giving significance
+
+We expect single-community and unit-community partitions to have significance zero (I think)
+
+Tests:
+
+Bad input (negative numTrials)
+
+Single community comparison
+Unit community comparison
+Normal case comparison
+
+FIXME any what circumstances will this be negative?
+
+"""
+
+def test_getzscore_invalid_number_of_trials():
+    """Test that a negative number of trials is rejected."""
+    expected = np.asarray([1]*40 + [2]*20 + [1]*40)
+    generated = np.asarray([1]*40 + [2]*10 + [3]*10 + [4]*40)
+    with pytest.raises(ValueError):
+        score = proteinnetworks.insight.getZScore(expected, generated, numTrials=-100)
+    pass
+
+def test_getzscore_single_community():
+    expected = np.asarray([1]*40 + [2]*20 + [1]*40)
+    generated = np.asarray([1]*100)
+    score = proteinnetworks.insight.getZScore(expected, generated)
+    assert score == 0
+
+def test_getzscore_unit_community():
+    expected = np.asarray([1]*40 + [2]*20 + [1]*40)
+    generated = np.asarray(range(1,101))
+    score = proteinnetworks.insight.getZScore(expected, generated)
+    assert score == 0
+
+def test_getzscore_normal_communities():
+    expected = np.asarray([1]*40 + [2]*20 + [1]*40)
+    generated = np.asarray([1]*40 + [2]*20 + [3]*20 + [4]*20)
+    score = proteinnetworks.insight.getZScore(expected, generated)
+    assert score > 0
+
+def test_getzscore_bad_communities():
+
+    # we expect most random guesses to place the community barrier closer to the we generated
+    expected = np.asarray([1]*60 + [2]*40) # + [1]*20)
+    generated = np.asarray([1]*5 + [2]*95) # + [3]*15 + [4]*35)
+    score = proteinnetworks.insight.getZScore(expected, generated, numTrials=1000)
+    assert score < 0
+
+
+
+"""
+Tests for getShannonEntropy
+
+inputs -> a partition  (assuming labelled [1,m])
+outputs -> the shannon entropy,
+H(A) = - sum_i ( n_i/N * log(n_i/N).
+
+Tests:
+- invalid input (anything not an array of numbers ranging from 1 to m without gaps)
+- all nodes in their own community
+- all nodes in the same community
+- "normal" community structure  
+"""
+
+"""
 getMutualInfo
 getNMI
 getConductanceFromPartition

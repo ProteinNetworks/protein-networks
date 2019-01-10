@@ -437,6 +437,10 @@ def getZScore(expectedArray, generatedArray, numTrials=100):
     Defined as: z = (J - mu ) / sigma . Find mu and sigma by generating
     null models.
     """
+
+    if numTrials < 1:
+        raise ValueError("number of trials must be a positive integer")
+
     J = getModifiedJaccard(expectedArray, generatedArray)
 
     nullJaccard = []
@@ -446,7 +450,10 @@ def getZScore(expectedArray, generatedArray, numTrials=100):
 
     mu = np.mean(nullJaccard)
     sigma = np.std(nullJaccard)
-    return (J - mu) / sigma
+    if math.isclose(mu, J):
+        return 0.0
+    else:
+        return (J - mu) / sigma
 
 
 def generateNullModel(testPartition):
