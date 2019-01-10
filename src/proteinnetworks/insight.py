@@ -590,6 +590,9 @@ def getShannonEntropy(partition):
     N = len(partition)
     H = 0
     totalComNumber = len(set(partition))
+    if set(partition) != set(range(1,totalComNumber+1)):
+        raise ValueError("communities must be labelled [1,m] where m is the number of communities")
+
     comSize = np.zeros(totalComNumber, dtype=int)
     for i in range(1, totalComNumber + 1):
         for j in range(0, N):
@@ -616,9 +619,14 @@ def getMutualInfo(generated, expected):
     """
     N1 = len(generated)
     N2 = len(expected)
-    assert N1 == N2
+    if N1 != N2:
+        raise(TypeError("partitions must be the same length"))
     comNumber1 = len(set(generated))
     comNumber2 = len(set(expected))
+    if set(generated) != set(range(1,comNumber1+1)) or set(expected) != set(range(1,comNumber2+1)):
+        raise ValueError("communities must be labelled [1,m] where m is the number of communities")
+
+
     confusionmatrix = np.zeros((comNumber1, comNumber2), dtype=int)
     for i in range(N1):
         confusionmatrix[generated[i] - 1, expected[i] - 1] += 1

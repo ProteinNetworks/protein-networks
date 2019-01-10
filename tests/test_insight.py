@@ -4,7 +4,7 @@ import proteinnetworks.insight
 import pytest
 import numpy as np
 import networkx as nx
-
+import math
 """
 Unit tests for the Insight module.
 
@@ -414,9 +414,130 @@ Tests:
 - "normal" community structure  
 """
 
+def test_getshannonentropy_invalid_inputs():
+    """Test that an array not containing [1,M] is rejected."""
+    testarray = [-1]*5 + [2]*5 +[4]*5
+    with pytest.raises(ValueError):
+        H = proteinnetworks.insight.getShannonEntropy(testarray)
+
+def test_getshannonentropy_single_community():
+    """Test the limiting case of all nodes in one community."""
+    testarray = [1]*100
+    H = proteinnetworks.insight.getShannonEntropy(testarray)
+    assert H==0
+
+def test_getshannonentropy_unit_community():
+    """Test the limiting case of all nodes in their own community."""
+    testarray = range(1,101)
+    H = proteinnetworks.insight.getShannonEntropy(testarray)
+    assert math.isclose(H,-math.log(1/100))
+
+def test_getshannonentropy_normal_community():
+    """Test a traditional community structure."""
+    testarray = [1]*10+[2]*10
+    H = proteinnetworks.insight.getShannonEntropy(testarray)
+    assert math.isclose(H,-math.log(1/2))
+
+
+
 """
-getMutualInfo
-getNMI
+tests for getMutualInfo
+
+inputs -> two partitions (numpy arrays, labels in [1,m])
+outputs -> mutual information, should always >=0 and < the average Shannon entropy.
+
+tests:
+- on inputs (check proper labelling)
+
+- all nodes in same community
+- all nodes in different communities
+- matching communities
+- completely disparate communities
+"""
+def test_getmutualinfo_invalid_inputs_labels():
+    """Test that improperly labelled arrays are rejected.""" 
+    testarray1 = [-1]*5 + [2]*5 +[4]*5
+    testarray2 = [-1]*5 + [2]*5 +[4]*5
+
+    with pytest.raises(ValueError):
+        I = proteinnetworks.insight.getMutualInfo(testarray1, testarray2)
+
+def test_getmutualinfo_invalid_inputs_lengths():
+    """Test that different length arrays will be rejecteed."""
+    testarray1 = [1]*5 + [2]*5 +[3]*5
+    testarray2 = [1]*5 + [2]*5 
+
+    with pytest.raises(TypeError):
+        I = proteinnetworks.insight.getMutualInfo(testarray1, testarray2)
+
+def test_getmutualinfo_single_community():
+    """Test that single communities have I=0."""
+    testarray1 = [1]*100
+    testarray2 = [1]*100
+    I = proteinnetworks.insight.getMutualInfo(testarray1, testarray2)
+    assert I==0
+
+def test_getmutualinfo_unit_community():
+    """Test that unit communities have I= log(N)."""
+    testarray1 = list(range(1,101))
+    testarray2 = list(range(1,101))
+    I = proteinnetworks.insight.getMutualInfo(testarray1, testarray2)
+    assert math.isclose(I,math.log(100))
+
+
+def test_getmutualinfo_matching_communities():
+    """Test that matching bipartitions have I=log(N).""" 
+    testarray1 = [1]*10+[2]*10
+    testarray2 = [1]*10+[2]*10
+    I = proteinnetworks.insight.getMutualInfo(testarray1, testarray2)
+    assert math.isclose(I,math.log(2))
+
+
+"""
+tests for getNMI
+
+input -> two partitions (invalid inputs will be caught by other functions)
+output -> a number that should always be between 0 and 1.
+"""
+
+def test_getnmi_perfect_match():
+    """Test that perfectly matching communities have NMI=1."""
+    testarray1 = [1]*10+[2]*10
+    testarray2 = [1]*10+[2]*10
+    nmi = proteinnetworks.insight.getNMI(testarray1, testarray2)
+    assert nmi == 1
+
+def test_getnmi_perfect_match():
+    """Test that random communities have NMI between 0 and 1."""
+    numberOfTrials = 100
+    for i in range(numberOfTrials):
+        arraySize = np.random.randint(2,300)
+        numberOfCommunites = np.random.randint(3,20)
+        randomPartition1 = []
+        randomPartition2 = []
+        i=1
+        while len(randomPartition1) < arraySize:
+            communitySize = np.random.randint(1, arraySize/2+1)
+            randomPartition1 += [i]*communitySize
+            i+=1
+        randomPartition1 = randomPartition1[:arraySize]
+        i=1
+        while len(randomPartition2) < arraySize:
+            communitySize = np.random.randint(1, arraySize/2+1)
+            randomPartition2 += [i]*communitySize
+            i+=1
+        randomPartition2 = randomPartition2[:arraySize]
+
+        np.random.shuffle(randomPartition1)
+        np.random.shuffle(randomPartition2)
+
+        print(randomPartition1)
+        print(randomPartition2)
+        nmi = proteinnetworks.insight.getNMI(randomPartition1, randomPartition2)
+        assert nmi > 0 and nmi < 1
+
+
+"""
 getConductanceFromPartition
 getConductanceFromNodeSubset
 getModularityFromPartition
