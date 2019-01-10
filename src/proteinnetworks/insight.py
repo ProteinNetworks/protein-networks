@@ -394,8 +394,19 @@ def getModifiedJaccard(expectedArray, generatedArray):
 
     The final score is the mean value over all domains.
     """
+    if not type(expectedArray) == np.ndarray or not type(generatedArray) == np.ndarray:
+        raise TypeError("both inputs must be numpy arrays") 
+    if not np.equal(np.mod(expectedArray, 1),0).all() or not np.equal(np.mod(generatedArray, 1),0).all():
+        raise TypeError("both inputs must be arrays of integers") 
+    if len(expectedArray) == 0 or len(generatedArray) == 0:
+        raise ValueError("both arrays must have non-zero length")
+    if len(expectedArray) != len(generatedArray):
+        raise ValueError("both arrays must have the same length")
+
     numPFAMdomains = len(
         set(expectedArray))  # NB this include "1", the base counter
+    if numPFAMdomains == 1:
+        raise ValueError("Input expected array has no domains")
     jaccards = []
     for i in range(2, numPFAMdomains + 1):
         # Get the modules with some overlap.
@@ -446,7 +457,19 @@ def generateNullModel(testPartition):
     the boundaries arbitrarily placed (and the same number of communities in total.)
     """
     # Get the total number of communities in the partition
+
+    if not type(testPartition) == np.ndarray:
+        raise TypeError("input must be a numpy array") 
+    if not np.equal(np.mod(testPartition, 1),0).all():
+        raise TypeError("input must be an array of integers") 
+    if len(testPartition) == 0:
+        raise ValueError("array must have non-zero length")
+
     numCommunities = len(set(testPartition))
+
+    if set(testPartition) != set(range(1,numCommunities+1)):
+        raise ValueError("communities must be labelled [1,m] where m is the number of communities")
+
     # Get the number of boundaries
     prevI = -1
     numBoundaries = -1  # Start from -1 to avoid counting the start as a boundary
@@ -520,11 +543,18 @@ def generateNullModel(testPartition):
 
 def getMCS(G1, G2):
     """Take two networkx graphs, return the MCS as a networkx graph."""
+
+    if not type(G1) == nx.Graph or not type(G2) == nx.Graph:
+        raise TypeError("inputs for graph isomorphism must be undirected graphs")
+
     # Let G1 be the smaller graph
     if G1.number_of_nodes() > G2.number_of_nodes():
         temp = G2
         G2 = G1
         G1 = temp
+
+    G1 = nx.relabel.convert_node_labels_to_integers(G1)
+    G2 = nx.relabel.convert_node_labels_to_integers(G2)
 
     N_G1 = G1.number_of_nodes()
     N_G2 = G2.number_of_nodes()
