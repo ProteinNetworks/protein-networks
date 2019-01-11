@@ -5,6 +5,9 @@ import pytest
 import numpy as np
 import networkx as nx
 import math
+
+from scipy.linalg import block_diag
+
 """
 Unit tests for the Insight module.
 
@@ -571,7 +574,127 @@ invalid inputs:
 """
 
 """
-getModularityFromPartition
-getModularityFromAdjacencyMatrix
-edgelistToGraph
+tests for getModularityFromPartition.
+
+for every level in the partition, generate the adjacency matrix then find the modularity.
+Just test one successful path, others should be caught be subfunctions. 
+
 """
+
+"""
+tests for getModularityFromAdjacencyMatrix.
+
+Input -> an adjacency matrix (assumed to be a 2d numpy array)
+
+
+Tests - a non-numpy array?
+- An array with negative weights?
+- A non-square array
+- A disconnected graph
+- A normal graph 
+"""
+
+def test_getmodularityfromadjacencymatrix_nonnumpy_array():
+    """tests that anything other than a numpy array is rejected"""
+    adjacency  = [[0,0,0,1],[0,0,1,1],[0,1,0,0],[1,1,0,0]]
+    comlist = [1,1,0,0]
+    with pytest.raises(TypeError):
+        Q = proteinnetworks.insight.getModularityFromAdjacencyMatrix(adjacency, comlist)
+
+def test_getmodularityfromadjacencymatrix_wrong_dimensions():
+    """tests that if the comlist and adjacency matrix have different lengths an error is thrown"""
+    adjacency  = np.asarray([[0,0,0,1],[0,0,1,1],[0,1,0,0],[1,1,0,0]])
+    comlist = [1,1,0]
+    with pytest.raises(ValueError):
+        Q = proteinnetworks.insight.getModularityFromAdjacencyMatrix(adjacency, comlist)
+
+def test_getmodularityfromadjacencymatrix_non_square_array():
+    """tests that non-square arrays are rejected"""
+    adjacency  = np.asarray([[0,0,0,1],[0,0,1,1],[0,1,0,0],[1,1,0,0], [1,1,0,0]])
+    comlist = [1,1,0,0]
+    with pytest.raises(ValueError):
+        Q = proteinnetworks.insight.getModularityFromAdjacencyMatrix(adjacency, comlist)
+
+def test_getmodularityfromadjacencymatrix_assymmetric_array():
+    """tests that non-symmetric arrays are rejected"""
+    adjacency  = np.asarray([[0,0,0,1],[0,0,1,1],[0,1,0,0],[1,1,1,0]])
+    comlist = [1,1,0,0]
+    with pytest.raises(ValueError):
+        Q = proteinnetworks.insight.getModularityFromAdjacencyMatrix(adjacency, comlist)
+
+
+
+def test_getmodularityfromadjacencymatrix_negative_weights():
+    """tests that negative weights are rejected"""
+    adjacency  = np.asarray([[0,0,0,1],[0,0,1,1],[0,1,0,0],[1,1,0,-1]])
+    comlist = [1,1,0,0]
+    with pytest.raises(ValueError):
+        Q = proteinnetworks.insight.getModularityFromAdjacencyMatrix(adjacency, comlist)
+
+
+def test_getmodularityfromadjacencymatrix_disconnected_graph():
+    """test the modularity returned from two disconnected communities"""
+    arrays = [np.ones((5,5)), np.ones((5,5))]
+    adjacency = block_diag(*arrays)
+    np.fill_diagonal(adjacency,0)
+    comlist = [1]*5 + [2]*5
+    Q = proteinnetworks.insight.getModularityFromAdjacencyMatrix(adjacency, comlist)
+    assert math.isclose(Q,0.5)
+
+    
+def test_getmodularityfromadjacencymatrix_normal_communities():
+    """test the modularity of random graphs, assert it is [-1, 1]"""
+    numTrials = 100
+    for i in range(numTrials):
+        l = np.random.randint(1,10)
+        k = np.random.randint(10,50)
+        p = np.random.random_sample()
+        G = nx.relaxed_caveman_graph(l,k,p)
+        adj = nx.convert_matrix.to_numpy_array(G)
+        comlist = []
+        for i in range(l):
+            comlist += [i]*k
+        Q = proteinnetworks.insight.getModularityFromAdjacencyMatrix(adj, comlist)
+        assert Q <= 1 and Q > -1
+
+
+"""
+tests for edgelistToGraph
+
+input -> a weighted edgelist
+output -> an undirected Graph
+
+Tests:
+- malformed edgelist (not rows of three)
+- negative or non-float weights
+-  i, j not integers
+- normal edgelist
+"""
+
+def test_edgelisttograph_malformed_edgelist():
+    """Tests that something other than rows of three throws an error."""
+    edgelist = [[0,1,1], [1,2,4], [4,5]]
+    with pytest.raises(ValueError):
+        G = proteinnetworks.insight.edgelistToGraph(edgelist)
+
+def test_edgelisttograph_incorrect_weights():
+    """Tests that non-float or negative weights throw an error."""
+    edgelist = [[0,1,"bla"], [1,2,4], [4,5,3]]
+    with pytest.raises(ValueError):
+        G = proteinnetworks.insight.edgelistToGraph(edgelist)
+    edgelist = [[0,1,-1], [1,2,4], [4,5,3]]
+    with pytest.raises(ValueError):
+        G = proteinnetworks.insight.edgelistToGraph(edgelist)
+   
+def test_edgelisttograph_noninteger_nodelabels():
+    """Tests that non-integer node labels will cause a ValueError."""
+    edgelist = [["bla",1,1], [1,2,4], [4,5,3]]
+    with pytest.raises(ValueError):
+        G = proteinnetworks.insight.edgelistToGraph(edgelist)
+
+def test_edgelisttograph_normal_edgelist():
+    """Tests that a well-formatted edgelist correctly returns a Graph."""
+    edgelist = [[1,2,1], [2,3,1], [3,1,1]]
+    G = proteinnetworks.insight.edgelistToGraph(edgelist)
+    assert G.number_of_edges() == 3
+    assert G.number_of_nodes() == 3

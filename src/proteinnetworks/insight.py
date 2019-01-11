@@ -729,6 +729,16 @@ def getModularityFromAdjacencyMatrix(adj, comlist):
 
       = \sum_{s} (w_{ss}/w = (w_s/2w)**2)
     """
+    if type(adj) != np.ndarray or adj.ndim != 2:
+        raise TypeError("adjacency matrix must be a 2D numpy array")
+    if np.shape(adj)[0] != np.shape(adj)[1]:
+        raise ValueError("adjacency matrix must be square")
+    if len(comlist) != np.shape(adj)[0]:
+        raise ValueError("partition length doesn't match adjacency matrix size")
+    if not np.all(adj == adj.T):
+        raise ValueError("adjacency matrix must be symmetric")
+    if np.any(adj < 0):
+        raise ValueError("all weights must be positive")
     rowsums = np.sum(adj, axis=0)
     N = len(adj)
     inversestrength = 1 / np.sum(adj)
@@ -754,135 +764,138 @@ def edgelistToGraph(edgelist):
     """
     G = nx.Graph()
     for i, j, weight in edgelist:
+        i = int(i)
+        j = int(j)
+        weight = float(weight)
+        if weight < 0:
+            raise ValueError("only positive weights are accepted")
         G.add_edge(i, j, weight=weight)
     return G
 
+# def drawTree(tree):
+#     """
+#     Draw a Graph object using graphviz
+#     """
+#     # from networkx.drawing.nx_agraph import graphviz_layout
+#     warnings.filterwarnings("ignore")  # Until Networkx gets its act together
 
-def drawTree(tree):
-    """
-    Draw a Graph object using graphviz
-    """
-    # from networkx.drawing.nx_agraph import graphviz_layout
-    warnings.filterwarnings("ignore")  # Until Networkx gets its act together
+#     # pos = graphviz_layout(tree, prog='twopi', root="0")
+#     plt.figure(figsize=(8, 8))
+#     nx.draw(
+#         tree,
+#         # pos,
+#         node_size=20,
+#         alpha=0.5,
+#         node_color="blue",
+#         with_labels=True)
+#     plt.show()
 
-    # pos = graphviz_layout(tree, prog='twopi', root="0")
-    plt.figure(figsize=(8, 8))
-    nx.draw(
-        tree,
-        # pos,
-        node_size=20,
-        alpha=0.5,
-        node_color="blue",
-        with_labels=True)
-    plt.show()
+# def getTreeSimilarity(partition1, partition2):
+#     """
+#     Given two Partitions, convert them into trees, then perform iterative labelling.
 
+#     This should reveal the similarity of the two trees.
 
-def getTreeSimilarity(partition1, partition2):
-    """
-    Given two Partitions, convert them into trees, then perform iterative labelling.
+#     Algorithm:
 
-    This should reveal the similarity of the two trees.
+#     Starting at the penultimate level, label the subtrees by isomorphism class.
+#     Then do a labelled isomorphism check of the higher nodes, all the way to the top.
+#     """
+#     import json  # for pretty printing
+#     tree1 = toTree(partition1.data)
+#     # tree1 = edgelistToGraph(treeEdgelist1)
+#     # tree2 = toTree(partition2.data)
+#     # tree2 = edgelistToGraph(treeEdgelist2)
 
-    Algorithm:
+#     # Get the leaves
+#     leafNodes1 = [x for x, y in tree1.degree() if y == 1]
+#     # leafNodes2 = [x for x, y in tree2.degree() if y == 1]
+#     # print(leafNodes1)
+#     print(json.dumps(list(tree1.nodes(data=True)), indent=2))
 
-    Starting at the penultimate level, label the subtrees by isomorphism class.
-    Then do a labelled isomorphism check of the higher nodes, all the way to the top.
-    """
-    import json  # for pretty printing
-    tree1 = toTree(partition1.data)
-    # tree1 = edgelistToGraph(treeEdgelist1)
-    # tree2 = toTree(partition2.data)
-    # tree2 = edgelistToGraph(treeEdgelist2)
-
-    # Get the leaves
-    leafNodes1 = [x for x, y in tree1.degree() if y == 1]
-    # leafNodes2 = [x for x, y in tree2.degree() if y == 1]
-    # print(leafNodes1)
-    print(json.dumps(list(tree1.nodes(data=True)), indent=2))
-
-    # sizeOfTree = tree1.number_of_nodes()
-    # numberOfLabelledNodes = 0
-    for node in leafNodes1:
-        tree1.nodes[node]['childrenLabels'] = []
-        tree1.nodes[node]['isoLabel'] = 0
-        tree1.nodes[node][
-            "size"] = 1  # Assumes all initial leaf nodes are of size 1
-        # numberOfLabelledNodes += 1
-        bottomLevel = tree1.nodes[node]["level"]
-    print(json.dumps(list(tree1.nodes(data=True)), indent=2))
-    # print(sizeOfTree)
-    # print(numberOfLabelledNodes)
-    print(bottomLevel)
-    for level in range(bottomLevel - 1, 0, -1):
-        nodesAtLevel = [
-            x for x, y in tree1.nodes(data=True) if y['level'] == level
-        ]
-        print(nodesAtLevel)
-        for node in nodesAtLevel:
-            print(tree1.nodes(data=True)[node])
-            print(tree1.nodes[node]['children'])
-    # while numberOfLabelledNodes < sizeOfTree:
+#     # sizeOfTree = tree1.number_of_nodes()
+#     # numberOfLabelledNodes = 0
+#     for node in leafNodes1:
+#         tree1.nodes[node]['childrenLabels'] = []
+#         tree1.nodes[node]['isoLabel'] = 0
+#         tree1.nodes[node][
+#             "size"] = 1  # Assumes all initial leaf nodes are of size 1
+#         # numberOfLabelledNodes += 1
+#         bottomLevel = tree1.nodes[node]["level"]
+#     print(json.dumps(list(tree1.nodes(data=True)), indent=2))
+#     # print(sizeOfTree)
+#     # print(numberOfLabelledNodes)
+#     print(bottomLevel)
+#     for level in range(bottomLevel - 1, 0, -1):
+#         nodesAtLevel = [
+#             x for x, y in tree1.nodes(data=True) if y['level'] == level
+#         ]
+#         print(nodesAtLevel)
+#         for node in nodesAtLevel:
+#             print(tree1.nodes(data=True)[node])
+#             print(tree1.nodes[node]['children'])
+#     # while numberOfLabelledNodes < sizeOfTree:
 
 
-def toTree(data):
-    """
-    5/2 OUTPUTS A NETWORKX GRAPH
-    Take the partition, and output an edgelist for a  tree in which each node is a community,
-    with edge weight the community size, connected to its parent node.
-    For each community, index the node, the level, and the region of the network it spans.
-    Then for each level, if a community in the previous level has an overlap, then create a
-    link.
-    Note we expect this to produce a simple tree i.e. one and only one community in the
-    previous level should show this. SHOULD TEST
-    """
-    nodes = [{"label": 0, "level": 0, "region": [True] * len(data[0])}]
+# def toTree(data):
+#     """
+#     5/2 OUTPUTS A NETWORKX GRAPH
+#     Take the partition, and output an edgelist for a  tree in which each node is a community,
+#     with edge weight the community size, connected to its parent node.
+#     For each community, index the node, the level, and the region of the network it spans.
+#     Then for each level, if a community in the previous level has an overlap, then create a
+#     link.
+#     Note we expect this to produce a simple tree i.e. one and only one community in the
+#     previous level should show this. SHOULD TEST
+#     """
+#     nodes = [{"label": 0, "level": 0, "region": [True] * len(data[0])}]
 
-    G = nx.Graph()
+#     G = nx.Graph()
 
-    G.add_node(0, level=0, children=[])  # , region=[True] * len(data[0]))
+#     G.add_node(0, level=0, children=[])  # , region=[True] * len(data[0]))
 
-    nodeLabelCounter = 1
+#     nodeLabelCounter = 1
 
-    treeDepth = len(data)
-    for i in range(treeDepth):
-        partition = np.asarray(data[i], dtype=int)
-        for community in set(partition):
-            node = {
-                "label": nodeLabelCounter,
-                "level": i + 1,
-                "region": list(partition == community)
-            }
-            G.add_node(nodeLabelCounter, level=i + 1, children=[])
-            # , region=list(partition == community)) leave off for now
-            nodes.append(node)
-            nodeLabelCounter += 1
+#     treeDepth = len(data)
+#     for i in range(treeDepth):
+#         partition = np.asarray(data[i], dtype=int)
+#         for community in set(partition):
+#             node = {
+#                 "label": nodeLabelCounter,
+#                 "level": i + 1,
+#                 "region": list(partition == community)
+#             }
+#             G.add_node(nodeLabelCounter, level=i + 1, children=[])
+#             # , region=list(partition == community)) leave off for now
+#             nodes.append(node)
+#             nodeLabelCounter += 1
 
-    # Now we have a list of "node" dicts. For each node, check whether any nodes in the previous
-    # level overlap. If so, make an edge of weight = size of overlap.
-    # NB this is a super inefficient way to do this
-    edges = []
-    for node in nodes:
-        prevLevel = [x for x in nodes if x['level'] == node['level'] - 1]
-        if not prevLevel:
-            # Will occur for the root node
-            continue
-        for prevLevelNode in prevLevel:
-            overlap = [
-                x and y
-                for x, y in zip(node['region'], prevLevelNode['region'])
-            ]
-            overlapSize = sum(overlap)
-            if overlapSize != 0:
-                edges.append(
-                    [node['label'], prevLevelNode['label'], overlapSize])
+#     # Now we have a list of "node" dicts. For each node, check whether any nodes in the previous
+#     # level overlap. If so, make an edge of weight = size of overlap.
+#     # NB this is a super inefficient way to do this
+#     edges = []
+#     for node in nodes:
+#         prevLevel = [x for x in nodes if x['level'] == node['level'] - 1]
+#         if not prevLevel:
+#             # Will occur for the root node
+#             continue
+#         for prevLevelNode in prevLevel:
+#             overlap = [
+#                 x and y
+#                 for x, y in zip(node['region'], prevLevelNode['region'])
+#             ]
+#             overlapSize = sum(overlap)
+#             if overlapSize != 0:
+#                 edges.append(
+#                     [node['label'], prevLevelNode['label'], overlapSize])
 
-                G.add_edge(
-                    node['label'], prevLevelNode['label'], weight=overlapSize)
-                # print(G.nodes[prevLevelNode['label']])
-                # print(G.nodes[prevLevelNode['label']]['children'])
-                # print(node['label'])
-                G.nodes[prevLevelNode['label']]['children'].append(
-                    node['label'])
+#                 G.add_edge(
+#                     node['label'], prevLevelNode['label'], weight=overlapSize)
+#                 # print(G.nodes[prevLevelNode['label']])
+#                 # print(G.nodes[prevLevelNode['label']]['children'])
+#                 # print(node['label'])
+#                 G.nodes[prevLevelNode['label']]['children'].append(
+#                     node['label'])
 
-    # return edges
-    return G
+#     # return edges
+#     return G
