@@ -538,13 +538,13 @@ def generateNullModel(testPartition):
         prevI = i
     assert set(nullModel) == set(testPartition)
     assert len(nullModel) == len(testPartition)
-    if nullModelNumBoundaries != numBoundaries:
+    if nullModelNumBoundaries != numBoundaries: # pragma: no cover
         logging.error(newBoundaries)
         logging.error(newCommunities)
         logging.error(testPartition.tolist())
         logging.error()
         logging.error(nullModel.tolist())
-        raise NotImplementedError
+        raise NotImplementedError 
     return nullModel
 
 
@@ -675,8 +675,8 @@ def getConductanceFromNodeSubset(node_subset, adjacency_matrix):
     """
     Return conductance given an adjacency matrix and a node_subset.
 
-    The node-subset is a 1D array with same dimension as the
-    adjacency matrix.
+    The node-subset is a 1D array which lists the node indices.
+
     Conductance is defined for a subset S, and its complement Sbar :
 
     C = sum_{i in S, j in Sbar} (a_{ij}) / min (a(S), a(Sbar))
@@ -684,6 +684,16 @@ def getConductanceFromNodeSubset(node_subset, adjacency_matrix):
     where a is the adjacency matrix, and a(S) is sum_{i in S, j in V} a_ij
     i.e. the total weight of edges indicent with S.
     """
+
+    if type(adjacency_matrix) != np.ndarray or adjacency_matrix.ndim != 2:
+        raise TypeError("adjacency matrix must be a 2D numpy array")
+    if np.shape(adjacency_matrix)[0] != np.shape(adjacency_matrix)[1]:
+        raise ValueError("adjacency matrix must be square")
+    if not np.all(adjacency_matrix == adjacency_matrix.T):
+        raise ValueError("adjacency matrix must be symmetric")
+    if np.any(adjacency_matrix < 0):
+        raise ValueError("all weights must be positive")
+
     node_complement = [
         i for i in range(len(adjacency_matrix)) if i not in node_subset
     ]

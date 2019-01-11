@@ -1,6 +1,5 @@
 from bson.objectid import ObjectId
-import proteinnetworks.partition
-import proteinnetworks.insight
+import proteinnetworks
 import pytest
 import numpy as np
 import networkx as nx
@@ -573,13 +572,68 @@ invalid inputs:
 - random node subsets 
 """
 
+def test_getconductancefromnodesubset_incorrect_dimensions():
+    """Check that the node subset only has indices that occur in the adjacency matrix."""
+    pass
+
+def test_getconductancefromnodesubset_non_numpy_array():
+    adjacency  = [[0,0,0,1],[0,0,1,1],[0,1,0,0],[1,1,0,0]]
+    comlist = [0,1]
+    with pytest.raises(TypeError):
+        Q = proteinnetworks.insight.getConductanceFromNodeSubset(comlist, adjacency)
+    
+def test_getconductancefromnodesubset_asymmetric_array():
+    adjacency  = np.asarray([[0,0,0,1],[0,0,1,1],[0,1,0,0],[1,1,1,0]])
+    comlist = [0,1]
+    with pytest.raises(ValueError):
+        Q = proteinnetworks.insight.getConductanceFromNodeSubset(comlist, adjacency)
+
+def test_getconductancefromnodesubset_non_square_array():
+    adjacency  = np.asarray([[0,0,0,1],[0,0,1,1],[0,1,0,0],[1,1,0,0], [0,0,0,0]])
+    comlist = [0,1]
+    with pytest.raises(ValueError):
+        Q = proteinnetworks.insight.getConductanceFromNodeSubset(comlist, adjacency)
+
+def test_getconductancefromnodesubset_negative_weights():
+    adjacency  = np.asarray([[0,0,0,1],[0,0,1,1],[0,1,0,0],[1,1,0,-1]])
+    comlist = [0,1]
+    with pytest.raises(ValueError):
+        Q = proteinnetworks.insight.getConductanceFromNodeSubset(comlist, adjacency)
+
+
+
+
+
+
 """
 tests for getModularityFromPartition.
 
 for every level in the partition, generate the adjacency matrix then find the modularity.
 Just test one successful path, others should be caught be subfunctions. 
-
 """
+
+def test_getmodularityfrompartition_success():
+    db = proteinnetworks.database.Database(password="bla")
+
+    inputArgs = {
+        "scaling": 4.5,
+        "edgelisttype": "residue",
+        "hydrogenstatus": "noH",
+        "pdbref": "1ubq",
+        "database": db
+    }
+    network = proteinnetworks.network.Network(**inputArgs)
+    partitionArgs = {
+        'pdbref': '1ubq',
+        'N': 10,
+        'edgelistid': ObjectId('58dbe03fef677d54224a01da'),
+        'detectionmethod': 'Infomap',
+        'r': -1,
+        "database": db
+    }
+    partition = proteinnetworks.partition.Partition(**partitionArgs)
+    Qs = proteinnetworks.insight.getModularityFromPartition(network,partition)
+    assert len(Qs) == 2
 
 """
 tests for getModularityFromAdjacencyMatrix.
