@@ -4,3 +4,4 @@ numpy
 matplotlib
 palettable
 networkx
+scipy
