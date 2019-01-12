@@ -659,6 +659,9 @@ def getConductanceFromPartition(network: Network,
     generatedArray = partition.data
     adjacency_matrix = network.getAdjacencyMatrix()
 
+    if network.edgelistid != partition.edgelistid:
+        raise ValueError("network and partition must correspond to the same system!")
+
     # NB this assumes labelling from 1 to m
     conductances = []
     for col in generatedArray:

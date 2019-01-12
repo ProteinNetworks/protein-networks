@@ -543,18 +543,61 @@ tests for getConductanceFromPartition
 inputs -> one Network, one Partition
 outputs -> a List of floats
 
-
 tests:
 invalid inputs:
     - partition and network are for different systems
-
+    - other errors should be caught by subfunctions
 - disconnected network
 - fully connected network
 - random partitions on the same network?
 """
 
+def test_getconductancefrompartition_validinputs():
+    """Test a success case where the network and partition correspond to the same system."""
+    db = proteinnetworks.database.Database(password="bla")
+    inputArgs = {
+        "scaling": 4.5,
+        "edgelisttype": "residue",
+        "hydrogenstatus": "noH",
+        "pdbref": "1ubq",
+        "database": db
+    }
+    network = proteinnetworks.network.Network(**inputArgs)
+    partitionArgs = {
+        'pdbref': '1ubq',
+        'N': 10,
+        'edgelistid': ObjectId(network.edgelistid),
+        'detectionmethod': 'Infomap',
+        'r': -1,
+        "database": db
+    }
+    partition = proteinnetworks.partition.Partition(**partitionArgs)
+    phis = proteinnetworks.insight.getConductanceFromPartition(network, partition)   
+    assert phis
 
-
+def test_getconductancefrompartition_invalidinputs():
+    """Test a failure case where the network and partition correspond to different systems."""
+    db = proteinnetworks.database.Database(password="bla")
+    inputArgs = {
+        "scaling": 4.5,
+        "edgelisttype": "residue",
+        "hydrogenstatus": "noH",
+        "pdbref": "2vcr",
+        "database": db
+    }
+    network = proteinnetworks.network.Network(**inputArgs)
+    partitionArgs = {
+        'pdbref': '1ubq',
+        'N': 10,
+        'edgelistid': ObjectId("58dbe03fef677d54224a01da"),
+        'detectionmethod': 'Infomap',
+        'r': -1,
+        "database": db
+    }
+    partition = proteinnetworks.partition.Partition(**partitionArgs)
+    with pytest.raises(ValueError):
+        phis = proteinnetworks.insight.getConductanceFromPartition(network, partition)   
+    
 
 """
 tests for getConductanceFromNodeSubset
