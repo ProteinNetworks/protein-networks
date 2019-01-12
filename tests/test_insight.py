@@ -574,33 +574,72 @@ invalid inputs:
 
 def test_getconductancefromnodesubset_incorrect_dimensions():
     """Check that the node subset only has indices that occur in the adjacency matrix."""
-    pass
+    adjacency  = np.asarray([[0,0,0,1],[0,0,1,1],[0,1,0,0],[1,1,0,0]])
+    node_subset = [-1,0]
+    with pytest.raises(ValueError):
+        Q = proteinnetworks.insight.getConductanceFromNodeSubset(node_subset, adjacency)
+    node_subset = [0,4]
+    with pytest.raises(ValueError):
+        Q = proteinnetworks.insight.getConductanceFromNodeSubset(node_subset, adjacency)
 
 def test_getconductancefromnodesubset_non_numpy_array():
     adjacency  = [[0,0,0,1],[0,0,1,1],[0,1,0,0],[1,1,0,0]]
-    comlist = [0,1]
+    node_subset = [0,1]
     with pytest.raises(TypeError):
-        Q = proteinnetworks.insight.getConductanceFromNodeSubset(comlist, adjacency)
+        Q = proteinnetworks.insight.getConductanceFromNodeSubset(node_subset, adjacency)
     
 def test_getconductancefromnodesubset_asymmetric_array():
     adjacency  = np.asarray([[0,0,0,1],[0,0,1,1],[0,1,0,0],[1,1,1,0]])
-    comlist = [0,1]
+    node_subset = [0,1]
     with pytest.raises(ValueError):
-        Q = proteinnetworks.insight.getConductanceFromNodeSubset(comlist, adjacency)
+        Q = proteinnetworks.insight.getConductanceFromNodeSubset(node_subset, adjacency)
 
 def test_getconductancefromnodesubset_non_square_array():
     adjacency  = np.asarray([[0,0,0,1],[0,0,1,1],[0,1,0,0],[1,1,0,0], [0,0,0,0]])
-    comlist = [0,1]
+    node_subset = [0,1]
     with pytest.raises(ValueError):
-        Q = proteinnetworks.insight.getConductanceFromNodeSubset(comlist, adjacency)
+        Q = proteinnetworks.insight.getConductanceFromNodeSubset(node_subset, adjacency)
 
 def test_getconductancefromnodesubset_negative_weights():
     adjacency  = np.asarray([[0,0,0,1],[0,0,1,1],[0,1,0,0],[1,1,0,-1]])
-    comlist = [0,1]
+    node_subset = [0,1]
     with pytest.raises(ValueError):
-        Q = proteinnetworks.insight.getConductanceFromNodeSubset(comlist, adjacency)
+        Q = proteinnetworks.insight.getConductanceFromNodeSubset(node_subset, adjacency)
 
 
+def test_getconductancefromnodesubset_disconnected_graph():
+    """Test that the conductance of a disconnected componenet is 0"""
+    arrays = [np.ones((5,5)), np.ones((5,5))]
+    adjacency = block_diag(*arrays)
+    np.fill_diagonal(adjacency,0)
+    node_subset = list(range(5))
+    phi = proteinnetworks.insight.getConductanceFromNodeSubset(node_subset, adjacency)
+    assert phi == 0
+
+def test_getconductancefromnodesubset_fullyconnected_graph():
+    """Test that the conductance of a fully-connected subgraph is 1"""
+    arrays = [np.ones((5,5)), np.ones((5,5))]
+    adjacency = block_diag(*arrays)
+    # np.fill_diagonal(adjacency,0)
+    adjacency = np.ones((10,10)) - adjacency
+    node_subset = list(range(5))
+    phi = proteinnetworks.insight.getConductanceFromNodeSubset(node_subset, adjacency)
+    assert phi == 1
+
+def test_getconductancefromnodesubset_random_graphs():
+    """Test that for many random graphs and subgraphs the conductance lies within limits."""
+    numTrials = 10
+    for i in range(numTrials):
+        l = np.random.randint(1,10)
+        k = np.random.randint(10,50)
+        p = np.random.random_sample()
+        G = nx.relaxed_caveman_graph(l,k,p)
+        # get the giant component
+        adj = nx.convert_matrix.to_numpy_array(G)
+        np.fill_diagonal(adj,0)
+        node_subset = np.random.randint(0, G.number_of_nodes(), np.random.randint(1, G.number_of_nodes()))
+        phi = proteinnetworks.insight.getConductanceFromNodeSubset(node_subset, adj)
+        assert  phi >= 0
 
 
 

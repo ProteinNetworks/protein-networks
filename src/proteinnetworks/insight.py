@@ -682,7 +682,7 @@ def getConductanceFromNodeSubset(node_subset, adjacency_matrix):
     C = sum_{i in S, j in Sbar} (a_{ij}) / min (a(S), a(Sbar))
 
     where a is the adjacency matrix, and a(S) is sum_{i in S, j in V} a_ij
-    i.e. the total weight of edges indicent with S.
+    i.e. the total weight of edges incident with S.
     """
 
     if type(adjacency_matrix) != np.ndarray or adjacency_matrix.ndim != 2:
@@ -693,6 +693,14 @@ def getConductanceFromNodeSubset(node_subset, adjacency_matrix):
         raise ValueError("adjacency matrix must be symmetric")
     if np.any(adjacency_matrix < 0):
         raise ValueError("all weights must be positive")
+
+    # check node subset map to valid indices.
+    numberOfNodes = np.shape(adjacency_matrix)[0]
+    for node in node_subset:
+        if node < 0 or node >= numberOfNodes:
+            raise ValueError(
+                f"total number of nodes is {numberOfNodes}, index in node_subset is {node}"
+                )
 
     node_complement = [
         i for i in range(len(adjacency_matrix)) if i not in node_subset
