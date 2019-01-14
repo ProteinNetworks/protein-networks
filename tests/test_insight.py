@@ -72,6 +72,105 @@ def test_supernetwork_init_all_options_valid_no_level(mock_database):
     assert superNetwork
 
 
+def test_supernetwork_init_all_options_valid_with_level(mock_database):
+    """
+    Checks that valid inputs gives the correct output.
+
+    If the partition is a valid Partition, and no level is given then a Supernetwork is generated.
+    I.e. no supernetwork is in the database, and one is created.
+    """
+    db = proteinnetworks.database.Database(password="bla")
+    partitionArgs = {
+        'pdbref': '1ubq',
+        'N': 10,
+        'edgelistid': ObjectId('58dbe03fef677d54224a01da'),
+        'detectionmethod': 'Infomap',
+        'r': -1,
+        "database": db
+    }
+    partition = proteinnetworks.partition.Partition(**partitionArgs)  # Tested by partition tests
+    superNetwork = proteinnetworks.insight.SuperNetwork(partition, level=0)
+    # Need to check that the partition is as expected
+    assert superNetwork
+
+
+def test_supernetwork_init_no_level_no_PFAM(mock_database):
+    """
+    Test that if no partition level is provided, and no PFAM entry can be found, then
+    an error is thrown.
+    """
+    db = proteinnetworks.database.Database(password="bla")
+    partitionArgs = {
+        'pdbref': '2vcr',
+        'N': 10,
+        'edgelistid': ObjectId('58dcf13fef677d54224a01da'),
+        'detectionmethod': 'Infomap',
+        'r': -1,
+        "database": db
+    }
+    partition = proteinnetworks.partition.Partition(**partitionArgs)  # Tested by partition tests
+    with pytest.raises(ValueError):
+        superNetwork = proteinnetworks.insight.SuperNetwork(partition)
+
+
+def test_supernetwork_init_malformed_level(mock_database):
+    """
+    Test that if a non-int level is passed to the supernetwork then a TypeError is thrown. 
+    """
+    db = proteinnetworks.database.Database(password="bla")
+    partitionArgs = {
+        'pdbref': '1ubq',
+        'N': 10,
+        'edgelistid': ObjectId('58dbe03fef677d54224a01da'),
+        'detectionmethod': 'Infomap',
+        'r': -1,
+        "database": db
+    }
+    partition = proteinnetworks.partition.Partition(**partitionArgs)  # Tested by partition tests
+    with pytest.raises(TypeError):
+        superNetwork = proteinnetworks.insight.SuperNetwork(partition, level="bla")
+    
+
+def test_supernetwork_init_invalid_level(mock_database):
+    """
+    Test that if a level which doesn't correspond to the partition level is passed then
+    an IndexError is thrown.
+    """
+    db = proteinnetworks.database.Database(password="bla")
+    partitionArgs = {
+        'pdbref': '1ubq',
+        'N': 10,
+        'edgelistid': ObjectId('58dbe03fef677d54224a01da'),
+        'detectionmethod': 'Infomap',
+        'r': -1,
+        "database": db
+    }
+    partition = proteinnetworks.partition.Partition(**partitionArgs)  # Tested by partition tests
+    with pytest.raises(IndexError):
+        superNetwork = proteinnetworks.insight.SuperNetwork(partition, level=-10)
+    # assert superNetwork
+    with pytest.raises(IndexError):
+        superNetwork = proteinnetworks.insight.SuperNetwork(partition, level=10)
+
+
+# def test_supernetwork_retrieved_from_database(mock_database):
+#     """
+#     Test that if a supernetwork has been stored in the database it can be retrieved correctly.
+#     """
+#     db = proteinnetworks.database.Database(password="bla")
+#     partitionArgs = {
+#         'pdbref': '2vcr',
+#         'N': 10,
+#         'edgelistid': ObjectId('58dcf13fef677d54224a01da'),
+#         'detectionmethod': 'Infomap',
+#         'r': -1,
+#         "database": db
+#     }
+#     partition = proteinnetworks.partition.Partition(**partitionArgs)  # Tested by partition tests
+#     # with pytest.raises(ValueError):
+#     superNetwork = proteinnetworks.insight.SuperNetwork(partition, level=0)
+#     assert superNetwork
+
 """
 tests for getModifiedJaccard()
 
@@ -99,7 +198,6 @@ def test_getmodifiedjaccard_invalidinputs_wrongtype_list():
     generated = [1]*40 + [2]*20 + [1]*40
     with pytest.raises(TypeError):
         jaccard = proteinnetworks.insight.getModifiedJaccard(expected, generated)
-    
 
 
 def test_getmodifiedjaccard_invalidinputs_wrongtype_string():
@@ -111,6 +209,7 @@ def test_getmodifiedjaccard_invalidinputs_wrongtype_string():
     with pytest.raises(TypeError):
         jaccard = proteinnetworks.insight.getModifiedJaccard(expected, generated)
 
+
 def test_getmodifiedjaccard_invalidinputs_wrongtype_floats():
     """
     Second test that numpy arrays of non-ints (in this case, floats) are rejected
@@ -121,7 +220,6 @@ def test_getmodifiedjaccard_invalidinputs_wrongtype_floats():
         jaccard = proteinnetworks.insight.getModifiedJaccard(expected, generated)
 
 
-
 def test_getmodifiedjaccard_invalidinputs_emptyarrays():
     """
     Test that zero-length numpy arrays are rejected
@@ -130,6 +228,7 @@ def test_getmodifiedjaccard_invalidinputs_emptyarrays():
     generated = np.asarray([])
     with pytest.raises(ValueError):
         jaccard = proteinnetworks.insight.getModifiedJaccard(expected, generated)
+
 
 def test_getmodifiedjaccard_invalidinputs_differentarrays():
     """
@@ -150,6 +249,7 @@ def test_getmodifiedjaccard_perfectoverlap():
     jaccard = proteinnetworks.insight.getModifiedJaccard(expected, generated)
     assert jaccard == 1
 
+
 def test_getmodifiedjaccard_partialoverlap_single_domains():
     """
     Check that if a PFAM array is a subset of a community, a score of <1.0 is returned.
@@ -159,7 +259,6 @@ def test_getmodifiedjaccard_partialoverlap_single_domains():
     jaccard = proteinnetworks.insight.getModifiedJaccard(expected, generated)
     # intersection of size 20, union of size 30
     assert jaccard == 2/3
-
 
 
 def test_getmodifiedjaccard_partialoverlap_multiple_domains():
@@ -181,8 +280,6 @@ def test_getmodifiedjaccard_nopfamdomain():
     generated = np.asarray([1]*20 + [2]*20)
     with pytest.raises(ValueError):
         jaccard = proteinnetworks.insight.getModifiedJaccard(expected, generated)
-    
-
 
 
 """
@@ -202,18 +299,20 @@ the case with normal communities
 check return is a numpy array.
 """
 
+
 def test_generatenullmodel_invalidinput_list():
     """Check that lists are rejected."""
     expected = [1]*40
     with pytest.raises(TypeError):
         array = proteinnetworks.insight.generateNullModel(expected)
-        
+
 
 def test_generatenullmodel_invalidinput_string():
     """Check that arrays of strings are rejected."""
     expected = np.asarray(["bla"]*40)
     with pytest.raises(TypeError):
         array = proteinnetworks.insight.generateNullModel(expected)
+
 
 def test_generatenullmodel_invalidinput_float():
     """Check that arrays of floats are  rejected."""
@@ -222,11 +321,13 @@ def test_generatenullmodel_invalidinput_float():
     with pytest.raises(TypeError):
         array = proteinnetworks.insight.generateNullModel(expected)
 
+
 def test_generatenullmodel_invalidinput_zerolengtharray():
     """Check that zero-length arrays are rejected."""
     expected = np.asarray([])
     with pytest.raises(ValueError):
         array = proteinnetworks.insight.generateNullModel(expected)
+
 
 def test_generatenullmodel_allcommunitiessizeone():
     expected = np.asarray(range(1,41))
@@ -239,7 +340,8 @@ def test_generatenullmodel_allcommunitiessizeone():
             numBoundaries += 1
         prevI = i
     assert numBoundaries == 39
- 
+
+
 def test_generatenullmodel_singlecommunity():
     expected = np.asarray([1]*40)
     array = proteinnetworks.insight.generateNullModel(expected)
@@ -265,18 +367,19 @@ def test_generatenullmodel_normalcommunities():
         prevI = i
     assert numBoundaries == 2
 
+
 def test_generatenullmodel_checkreturntype():
     expected = np.asarray([1]*40)
     expected = np.asarray([1]*20 + [2]*20 + [3]*20 )
     array = proteinnetworks.insight.generateNullModel(expected)
     assert type(array) == np.ndarray
 
+
 def test_generatenullmodel_invalidinput_communities_start_from_one():
     """Check that the communities are labelled from 1 to N, without gaps"""
     expected = np.asarray([0]*5+[2]*5)
     with pytest.raises(ValueError):
         array = proteinnetworks.insight.generateNullModel(expected)
-
 
 
 """
@@ -296,6 +399,7 @@ Test:
 - Disconnected graphs
 """
 
+
 def test_getmcs_invalid_input():
     """Test that inputs that aren't networkx undirected graphs are rejected.""" 
     input1 = [[1,2], [2,3], [1,3]]
@@ -305,7 +409,6 @@ def test_getmcs_invalid_input():
         mcs = proteinnetworks.insight.getMCS(input1, input2)
 
 
-
 def test_getmcs_isomorphic_graphs():
     input1 = [[1,2], [2,3], [1,3]] # triangle
     input2 = [[2,3], [3,4], [4,2]] # triangle, differently labelled
@@ -313,8 +416,8 @@ def test_getmcs_isomorphic_graphs():
     input1 = nx.Graph(input1)
     input2 = nx.Graph(input2)
     mcs = proteinnetworks.insight.getMCS(input1, input2)
-
     assert nx.is_isomorphic(mcs, input1) and nx.is_isomorphic(mcs, input2)
+
 
 def test_getmcs_perfect_subgraph():
 
@@ -326,6 +429,7 @@ def test_getmcs_perfect_subgraph():
     mcs = proteinnetworks.insight.getMCS(input1, input2)
     assert nx.is_isomorphic(mcs, input1) and not nx.is_isomorphic(mcs, input2)
 
+
 def test_getmcs_single_node_graph():
     input1 = [[1,2], [2,3], [1,3]] # triangle
 
@@ -336,6 +440,7 @@ def test_getmcs_single_node_graph():
     assert nx.is_isomorphic(mcs, input2) and not nx.is_isomorphic(mcs, input1)
     assert mcs.number_of_nodes() == 1
 
+
 def test_getmcs_disconnected_graphs():
     input1 = [[1,2], [2,3], [1,3]] # triangle
     input2 = [[2,3], [3,4], [4,2], [5,6], [6,7], [7,5]] # two triangles
@@ -343,7 +448,6 @@ def test_getmcs_disconnected_graphs():
     input2 = nx.Graph(input2)
     mcs = proteinnetworks.insight.getMCS(input1, input2)
     assert nx.is_isomorphic(mcs, input1) and not nx.is_isomorphic(mcs, input2)
-
 
 
 """
@@ -366,13 +470,14 @@ FIXME any what circumstances will this be negative?
 
 """
 
+
 def test_getzscore_invalid_number_of_trials():
     """Test that a negative number of trials is rejected."""
     expected = np.asarray([1]*40 + [2]*20 + [1]*40)
     generated = np.asarray([1]*40 + [2]*10 + [3]*10 + [4]*40)
     with pytest.raises(ValueError):
         score = proteinnetworks.insight.getZScore(expected, generated, numTrials=-100)
-    pass
+
 
 def test_getzscore_single_community():
     expected = np.asarray([1]*40 + [2]*20 + [1]*40)
@@ -380,17 +485,20 @@ def test_getzscore_single_community():
     score = proteinnetworks.insight.getZScore(expected, generated)
     assert score == 0
 
+
 def test_getzscore_unit_community():
     expected = np.asarray([1]*40 + [2]*20 + [1]*40)
     generated = np.asarray(range(1,101))
     score = proteinnetworks.insight.getZScore(expected, generated)
     assert score == 0
 
+
 def test_getzscore_normal_communities():
     expected = np.asarray([1]*40 + [2]*20 + [1]*40)
     generated = np.asarray([1]*40 + [2]*20 + [3]*20 + [4]*20)
     score = proteinnetworks.insight.getZScore(expected, generated)
     assert score > 0
+
 
 def test_getzscore_bad_communities():
 
@@ -399,7 +507,6 @@ def test_getzscore_bad_communities():
     generated = np.asarray([1]*5 + [2]*95) # + [3]*15 + [4]*35)
     score = proteinnetworks.insight.getZScore(expected, generated, numTrials=1000)
     assert score < 0
-
 
 
 """

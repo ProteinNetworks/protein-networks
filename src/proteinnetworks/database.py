@@ -512,7 +512,7 @@ class Database:
         numresults = cursor.count()
         if numresults:
             raise IOError(
-                "Partition already exists in the database! Something has gone terribly wrong!"
+                "Supernetwork already exists in the database! Something has gone terribly wrong!"
             )
         else:
             supernetwork['data'] = data

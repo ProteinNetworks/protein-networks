@@ -442,7 +442,18 @@ data = [{
         "endresidue": 3,
         "pfamref": "bla"
     }
-}
+},
+
+# {
+#     # Supernetwork
+#     'pdbref': '2vcr',
+#     'doctype': 'supernetwork',
+#     'partitionid': ObjectId('58dbe045ef677d54224a01d2'),
+#     'level': 0,
+#     'data': [[2, 1, 1]],
+#     "_id": ObjectId("58dbe045ef677d54224a01d2"),
+#     'date': datetime.datetime(2018, 3, 29, 16, 26, 39, 894000)
+# }
 
 ]
 

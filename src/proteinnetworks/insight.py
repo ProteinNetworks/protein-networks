@@ -77,10 +77,14 @@ class SuperNetwork:
 
         else:
             logger.info("Using specified level:", level)
-            self.level = int(level)
-
-        partition = partition[self.level]
-
+            try:
+                self.level = int(level)
+            except ValueError as err:
+                raise TypeError(f"{level} is not a valid level for the supernetwork")
+        try:
+            partition = partition[self.level]
+        except IndexError:
+            raise IndexError(f"Level passed: {self.level}. level should be between 0 and {len(partition)}") 
         # Attempt to extract the supernetwork matching the given params
         doc = self.database.extractSuperNetwork(self.pdbref, self.partitionid,
                                                 level)
@@ -88,6 +92,7 @@ class SuperNetwork:
         if doc:
             self.data = doc['data']
             logger.info("supernetwork found")
+
 
         else:
             # Generate the supernetwork
