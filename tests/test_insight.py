@@ -37,6 +37,8 @@ edgelistToGraph
 
 
 """
+SuperNetwork Tests
+-----------------------------------------------------------------------------------------
 Tests for SuperNetwork.__init__()
 Inputs: inputPartition, level (int, defaults to None)
 
@@ -367,9 +369,412 @@ def test_getisomorphs_multipleisomorphsindatabase_given_empty_subset(mock_databa
 
 """
 tests for supernetwork.getWeakIsomorphs()
+
+inputs -> supernetwork, optional subset of proteins
+
+output -> a list of [self.pdbref, otherpdbref, simscore] 
 """
 
-# INSERT TESTS HERE
+
+def test_getweakisomorphs_multipleisomorphsindatabase(mock_database):
+    """Test when there are multiple supernetworks with isomorphic graphs in the database"""
+    db = proteinnetworks.database.Database(password="bla")
+    partitionArgs = {
+        'pdbref': '1iso',
+        'N': 10,
+        'edgelistid': ObjectId('58abe03fef677d54224a01da'),
+        'detectionmethod': 'Infomap',
+        'r': -1,
+        "database": db
+    }
+    partition = proteinnetworks.partition.Partition(**partitionArgs)
+    superNetwork = proteinnetworks.insight.SuperNetwork(partition, level=0)
+    weakisomorphs = superNetwork.getWeakIsomorphs()
+    assert len(weakisomorphs) == 3
+    assert '2iso' in [x[1] for x in weakisomorphs] and '3iso' in [x[1] for x in weakisomorphs]
+
+
+
+def test_getweakisomorphs_multipleisomorphsindatabase_given_partial_subset(mock_database):
+    """Test when there are multiple supernetworks with isomorphic graphs in the database, and we pass
+    the subset containing only one of those supernetworks"""
+    db = proteinnetworks.database.Database(password="bla")
+
+    subset = []
+    partitionArgs = {
+        'pdbref': '2iso',
+        'N': 10,
+        'edgelistid': ObjectId('58abe03fef677d54224a02da'),
+        'detectionmethod': 'Infomap',
+        'r': -1,
+        "database": db
+    }
+    partition = proteinnetworks.partition.Partition(**partitionArgs)
+    superNetwork = proteinnetworks.insight.SuperNetwork(partition, level=0)
+    subset.append(superNetwork)
+
+    partitionArgs = {
+        'pdbref': '1iso',
+        'N': 10,
+        'edgelistid': ObjectId('58abe03fef677d54224a01da'),
+        'detectionmethod': 'Infomap',
+        'r': -1,
+        "database": db
+    }
+    partition = proteinnetworks.partition.Partition(**partitionArgs)
+    superNetwork = proteinnetworks.insight.SuperNetwork(partition, level=0)
+    weakisomorphs = superNetwork.getWeakIsomorphs(subset=subset)
+    assert '2iso' in [x[1] for x in weakisomorphs] and '3iso' not in [x[1] for x in weakisomorphs]
+
+
+
+def test_getweakisomorphs_multipleisomorphsindatabase_given_empty_subset(mock_database):
+    """Test when there are multiple supernetworks with isomorphic graphs in the database, and we pass
+    the subset containing only one of those supernetworks"""
+    db = proteinnetworks.database.Database(password="bla")
+
+    subset = []
+
+    partitionArgs = {
+        'pdbref': '1iso',
+        'N': 10,
+        'edgelistid': ObjectId('58abe03fef677d54224a01da'),
+        'detectionmethod': 'Infomap',
+        'r': -1,
+        "database": db
+    }
+    partition = proteinnetworks.partition.Partition(**partitionArgs)
+    superNetwork = proteinnetworks.insight.SuperNetwork(partition, level=0)
+    with pytest.raises(ValueError):
+        isomorphs = superNetwork.getWeakIsomorphs(subset=subset)
+
+
+"""
+SuperNetworkNullModel Tests
+-----------------------------------------------------------------------------------------
+Tests for SuperNetworkNullModel.__init__()
+Inputs: inputPartition, level (int, defaults to None)
+
+Outputs: a SuperNetwork
+
+Options: Multi-chain input partition legit
+         Single-chain input partiton legit
+         Partition doesn't have given level
+         Arguments are invalid
+
+"""
+
+
+def test_nullmodel_supernetwork_init_all_options_valid_no_level(mock_database):
+    """
+    Checks that valid inputs gives the correct output.
+
+    If the partition is a valid Partition, and no level is given then a Supernetwork is generated.
+    """
+    db = proteinnetworks.database.Database(password="bla")
+    partitionArgs = {
+        'pdbref': '1ubq',
+        'N': 10,
+        'edgelistid': ObjectId('58dbe03fef677d54224a01da'),
+        'detectionmethod': 'Infomap',
+        'r': -1,
+        "database": db
+    }
+    partition = proteinnetworks.partition.Partition(**partitionArgs)  # Tested by partition tests
+    superNetwork = proteinnetworks.insight.SuperNetworkNullModel(partition)
+    # Need to check that the partition is as expected
+    assert superNetwork.data
+
+
+def test_nullmodel_supernetwork_init_all_options_valid_with_level(mock_database):
+    """
+    Checks that valid inputs gives the correct output.
+
+    If the partition is a valid Partition, and a level is given then a Supernetwork is generated.
+    """
+    db = proteinnetworks.database.Database(password="bla")
+    partitionArgs = {
+        'pdbref': '1ubq',
+        'N': 10,
+        'edgelistid': ObjectId('58dbe03fef677d54224a01da'),
+        'detectionmethod': 'Infomap',
+        'r': -1,
+        "database": db
+    }
+    partition = proteinnetworks.partition.Partition(**partitionArgs)  # Tested by partition tests
+    superNetwork = proteinnetworks.insight.SuperNetworkNullModel(partition, level=0)
+    # Need to check that the partition is as expected
+    assert superNetwork
+
+
+def test_nullmodel_supernetwork_init_malformed_level(mock_database):
+    """
+    Test that if a non-int level is passed to the supernetwork then a TypeError is thrown.
+    """
+    db = proteinnetworks.database.Database(password="bla")
+    partitionArgs = {
+        'pdbref': '1ubq',
+        'N': 10,
+        'edgelistid': ObjectId('58dbe03fef677d54224a01da'),
+        'detectionmethod': 'Infomap',
+        'r': -1,
+        "database": db
+    }
+    partition = proteinnetworks.partition.Partition(**partitionArgs)  # Tested by partition tests
+    with pytest.raises(TypeError):
+        superNetwork = proteinnetworks.insight.SuperNetworkNullModel(partition, level="bla")
+
+
+def test_nullmodel_supernetwork_init_invalid_level(mock_database):
+    """
+    Test that if a level which doesn't correspond to the partition level is passed then
+    an IndexError is thrown.
+    """
+    db = proteinnetworks.database.Database(password="bla")
+    partitionArgs = {
+        'pdbref': '1ubq',
+        'N': 10,
+        'edgelistid': ObjectId('58dbe03fef677d54224a01da'),
+        'detectionmethod': 'Infomap',
+        'r': -1,
+        "database": db
+    }
+    partition = proteinnetworks.partition.Partition(**partitionArgs)  # Tested by partition tests
+    with pytest.raises(IndexError):
+        superNetwork = proteinnetworks.insight.SuperNetworkNullModel(partition, level=-10)
+    # assert superNetwork
+    with pytest.raises(IndexError):
+        superNetwork = proteinnetworks.insight.SuperNetworkNullModel(partition, level=10)
+
+"""
+tests for supernetwork.draw()
+FIXME currently plt.show is mocked so as not to do anything.
+"""
+def test_nullmodel_draw_success(mock_database):
+
+    db = proteinnetworks.database.Database(password="bla")
+    partitionArgs = {
+        'pdbref': '1ubq',
+        'N': 10,
+        'edgelistid': ObjectId('58dbe03fef677d54224a01da'),
+        'detectionmethod': 'Infomap',
+        'r': -1,
+        "database": db
+    }
+    partition = proteinnetworks.partition.Partition(**partitionArgs)
+    superNetworkNullModel = proteinnetworks.insight.SuperNetworkNullModel(partition, level=0)
+    superNetworkNullModel.draw()
+
+
+"""
+tests for supernetwork.getIsomorphs()
+
+inputs ->  the supernetwork itself, subset (a list of supernetworks)
+
+tests:
+
+supernetwork with no isomorphs
+supernetwork with multiple isomorphs
+
+Both of the above with a passed subset, plus catch an error if there aren't any proteins in the subset
+or the elements are of the wrong type.
+"""
+
+
+def test_nullmodel_getisomorphs_multipleisomorphsindatabase(mock_database):
+    """Test when there are multiple supernetworks with isomorphic graphs in the database"""
+    db = proteinnetworks.database.Database(password="bla")
+    partitionArgs = {
+        'pdbref': '1iso',
+        'N': 10,
+        'edgelistid': ObjectId('58abe03fef677d54224a01da'),
+        'detectionmethod': 'Infomap',
+        'r': -1,
+        "database": db
+    }
+    partition = proteinnetworks.partition.Partition(**partitionArgs)
+    superNetwork = proteinnetworks.insight.SuperNetworkNullModel(partition, level=0)
+    isomorphs = superNetwork.getIsomorphs()
+
+
+def test_nullmodel_getisomorphs_multipleisomorphsindatabase_given_subset(mock_database):
+    """Test when there are multiple supernetworks with isomorphic graphs in the database, and we pass
+    a subset"""
+    db = proteinnetworks.database.Database(password="bla")
+
+    subset = []
+    partitionArgs = {
+        'pdbref': '2iso',
+        'N': 10,
+        'edgelistid': ObjectId('58abe03fef677d54224a02da'),
+        'detectionmethod': 'Infomap',
+        'r': -1,
+        "database": db
+    }
+    partition = proteinnetworks.partition.Partition(**partitionArgs)
+    superNetwork = proteinnetworks.insight.SuperNetworkNullModel(partition, level=0)
+    subset.append(superNetwork)
+    partitionArgs = {
+        'pdbref': '3iso',
+        'N': 10,
+        'edgelistid': ObjectId('58abe03fef677d54224a03da'),
+        'detectionmethod': 'Infomap',
+        'r': -1,
+        "database": db
+    }
+    partition = proteinnetworks.partition.Partition(**partitionArgs)
+    superNetwork = proteinnetworks.insight.SuperNetworkNullModel(partition, level=0)
+    subset.append(superNetwork)
+
+    partitionArgs = {
+        'pdbref': '1iso',
+        'N': 10,
+        'edgelistid': ObjectId('58abe03fef677d54224a01da'),
+        'detectionmethod': 'Infomap',
+        'r': -1,
+        "database": db
+    }
+    partition = proteinnetworks.partition.Partition(**partitionArgs)
+    superNetwork = proteinnetworks.insight.SuperNetworkNullModel(partition, level=0)
+    isomorphs = superNetwork.getIsomorphs(subset=subset)
+
+
+def test_nullmodel_getisomorphs_multipleisomorphsindatabase_given_partial_subset(mock_database):
+    """Test when there are multiple supernetworks with isomorphic graphs in the database, and we pass
+    the subset containing only one of those supernetworks"""
+    db = proteinnetworks.database.Database(password="bla")
+
+    subset = []
+    partitionArgs = {
+        'pdbref': '2iso',
+        'N': 10,
+        'edgelistid': ObjectId('58abe03fef677d54224a02da'),
+        'detectionmethod': 'Infomap',
+        'r': -1,
+        "database": db
+    }
+    partition = proteinnetworks.partition.Partition(**partitionArgs)
+    superNetwork = proteinnetworks.insight.SuperNetworkNullModel(partition, level=0)
+    subset.append(superNetwork)
+
+    partitionArgs = {
+        'pdbref': '1iso',
+        'N': 10,
+        'edgelistid': ObjectId('58abe03fef677d54224a01da'),
+        'detectionmethod': 'Infomap',
+        'r': -1,
+        "database": db
+    }
+    partition = proteinnetworks.partition.Partition(**partitionArgs)
+    superNetwork = proteinnetworks.insight.SuperNetworkNullModel(partition, level=0)
+    isomorphs = superNetwork.getIsomorphs(subset=subset)
+
+
+
+def test_nullmodel_getisomorphs_multipleisomorphsindatabase_given_empty_subset(mock_database):
+    """Test when there are multiple supernetworks with isomorphic graphs in the database, and we pass
+    the subset containing only one of those supernetworks"""
+    db = proteinnetworks.database.Database(password="bla")
+
+    subset = []
+
+    partitionArgs = {
+        'pdbref': '1iso',
+        'N': 10,
+        'edgelistid': ObjectId('58abe03fef677d54224a01da'),
+        'detectionmethod': 'Infomap',
+        'r': -1,
+        "database": db
+    }
+    partition = proteinnetworks.partition.Partition(**partitionArgs)
+    superNetwork = proteinnetworks.insight.SuperNetworkNullModel(partition, level=0)
+    with pytest.raises(ValueError):
+        isomorphs = superNetwork.getIsomorphs(subset=subset)
+
+
+"""
+tests for supernetwork.getWeakIsomorphs()
+
+inputs -> supernetwork, optional subset of proteins
+
+output -> a list of [self.pdbref, otherpdbref, simscore] 
+"""
+
+
+def test_nullmodel_getweakisomorphs_multipleisomorphsindatabase(mock_database):
+    """Test when there are multiple supernetworks with isomorphic graphs in the database"""
+    db = proteinnetworks.database.Database(password="bla")
+    partitionArgs = {
+        'pdbref': '1iso',
+        'N': 10,
+        'edgelistid': ObjectId('58abe03fef677d54224a01da'),
+        'detectionmethod': 'Infomap',
+        'r': -1,
+        "database": db
+    }
+    partition = proteinnetworks.partition.Partition(**partitionArgs)
+    superNetwork = proteinnetworks.insight.SuperNetworkNullModel(partition, level=0)
+    weakisomorphs = superNetwork.getWeakIsomorphs()
+
+
+def test_nullmodel_getweakisomorphs_multipleisomorphsindatabase_given_partial_subset(mock_database):
+    """Test when there are multiple supernetworks with isomorphic graphs in the database, and we pass
+    the subset containing only one of those supernetworks"""
+    db = proteinnetworks.database.Database(password="bla")
+
+    subset = []
+    partitionArgs = {
+        'pdbref': '2iso',
+        'N': 10,
+        'edgelistid': ObjectId('58abe03fef677d54224a02da'),
+        'detectionmethod': 'Infomap',
+        'r': -1,
+        "database": db
+    }
+    partition = proteinnetworks.partition.Partition(**partitionArgs)
+    superNetwork = proteinnetworks.insight.SuperNetworkNullModel(partition, level=0)
+    subset.append(superNetwork)
+
+    partitionArgs = {
+        'pdbref': '1iso',
+        'N': 10,
+        'edgelistid': ObjectId('58abe03fef677d54224a01da'),
+        'detectionmethod': 'Infomap',
+        'r': -1,
+        "database": db
+    }
+    partition = proteinnetworks.partition.Partition(**partitionArgs)
+    superNetwork = proteinnetworks.insight.SuperNetworkNullModel(partition, level=0)
+    weakisomorphs = superNetwork.getWeakIsomorphs(subset=subset)
+
+
+def test_nullmodel_getweakisomorphs_multipleisomorphsindatabase_given_empty_subset(mock_database):
+    """Test when there are multiple supernetworks with isomorphic graphs in the database, and we pass
+    the subset containing only one of those supernetworks"""
+    db = proteinnetworks.database.Database(password="bla")
+
+    subset = []
+
+    partitionArgs = {
+        'pdbref': '1iso',
+        'N': 10,
+        'edgelistid': ObjectId('58abe03fef677d54224a01da'),
+        'detectionmethod': 'Infomap',
+        'r': -1,
+        "database": db
+    }
+    partition = proteinnetworks.partition.Partition(**partitionArgs)
+    superNetwork = proteinnetworks.insight.SuperNetworkNullModel(partition, level=0)
+    with pytest.raises(ValueError):
+        isomorphs = superNetwork.getWeakIsomorphs(subset=subset)
+
+
+"""
+End of SuperNetworkNullModel tests
+-----------------------------------------------------------------------------------------
+
+"""
+
 
 
 """

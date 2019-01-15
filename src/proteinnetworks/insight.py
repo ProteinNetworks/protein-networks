@@ -203,7 +203,7 @@ class SuperNetwork:
         Returns a list [self.pdbref, otherpdbref, simscore] for all proteins with
         a simscore > 0.5.
 
-        If a subset of the supernetworks are given, this is used. (subset must be a numpy array)
+        If a subset of the supernetworks are given, this is used
         """
         # Generate the NetworkX graph for the supernetwork
         G = nx.Graph()
@@ -212,34 +212,59 @@ class SuperNetwork:
 
         G = nx.convert_node_labels_to_integers(G)
         # Get a cursor for all supernetworks in the database
-
-        if subset.any():
-            proteins = subset
-        else:
+        if subset is None:
             proteins = self.database.extractAllSuperNetworks(
                 pdbref=self.pdbref)
+            if proteins.count() == 0:
+                raise ValueError("no protein supernetworks in database!")
+        else:
+            proteins = subset
+            if len(proteins) == 0:
+                raise ValueError("no protein supernetworks in subset ")
+
         weakIsomorphs = []
         for protein in proteins:
             G2 = nx.Graph()
-            for i, j, weight in protein['data']:
-                G2.add_edge(i, j)
+            if type(protein) is dict:
+                for i, j, weight in protein['data']:
+                    G2.add_edge(i, j, weight=weight)
 
-            G2 = nx.convert_node_labels_to_integers(G2)
-            # Get the maximum common subgraph for the two supernetworks
-            try:
-                MCS = getMCS(G, G2)
-            except ValueError:
-                continue
-            if MCS:
-                similarity = MCS.number_of_nodes() / (
-                    max(G.number_of_nodes(), G2.number_of_nodes()))
-            else:
-                similarity = 0
+                G2 = nx.convert_node_labels_to_integers(G2)
+                # Get the maximum common subgraph for the two supernetworks
+                try:
+                    MCS = getMCS(G, G2)
+                except ValueError:
+                    continue
+                if MCS:
+                    similarity = MCS.number_of_nodes() / (
+                        max(G.number_of_nodes(), G2.number_of_nodes()))
+                else:
+                    similarity = 0
 
-            if similarity > 0.5:
-                weakIsomorphs.append(
-                    [self.pdbref, protein['pdbref'],
-                     str(similarity)])
+                if similarity > 0.5:
+                    weakIsomorphs.append(
+                        [self.pdbref, protein['pdbref'],
+                        str(similarity)])
+            elif type(protein) is SuperNetwork:
+                for i, j, weight in protein.data:
+                    G2.add_edge(i, j, weight=weight)
+
+                G2 = nx.convert_node_labels_to_integers(G2)
+                # Get the maximum common subgraph for the two supernetworks
+                try:
+                    MCS = getMCS(G, G2)
+                except ValueError:
+                    continue
+                if MCS:
+                    similarity = MCS.number_of_nodes() / (
+                        max(G.number_of_nodes(), G2.number_of_nodes()))
+                else:
+                    similarity = 0
+
+                if similarity > 0.5:
+                    weakIsomorphs.append(
+                        [self.pdbref, protein.pdbref,
+                        str(similarity)]) 
 
         return weakIsomorphs
 
@@ -252,21 +277,63 @@ class SuperNetworkNullModel:
     Includes a single-chain reference, for use in the getIsomorphs function
     """
 
-    def __init__(self, inputPartition, level=None):
+    def __init__(self, inputPartition, level=None, verbosity=1):
         """Generate the network from an existing Partition."""
         # Get the input partition and edgelist
         self.pdbref = inputPartition.pdbref  # Save the details on the partition used
         self.database = inputPartition.database
         self.partitionid = inputPartition.partitionid
+        
+        # Reset the verbosity
+        for handler in logging.root.handlers[:]:
+            logging.root.removeHandler(handler)
+        logger = logging.getLogger(__name__)
+        logger.setLevel(loggingLevels[verbosity])
+        for handler in logger.handlers[:]:
+            logger.removeHandler(handler)
+
+        ch = logging.StreamHandler()
+        # ch.setFormatter()
+        logger.addHandler(ch)
+
         partition = inputPartition.data
         edgelistDoc = inputPartition.database.extractDocumentGivenId(
             inputPartition.edgelistid)
         edgelist = edgelistDoc['data']
-        self.chainref = edgelistDoc.get(
-            'chainref')  # None if no chainref found
-        # If no level is given, try to find the level best matching PFAM
+        self.chainref = edgelistDoc.get('chainref')  # None if no chainref found
+        if level is None:
+            try:
+                pfamDomains = np.asarray(
+                    inputPartition.getPFAMDomainArray(), dtype=int)
+            except ValueError:
+                logger.error("No PFAM entry -> cannot generate supernetwork")
+                raise ValueError
 
-        partition = generateNullModel(partition[0])
+            maxJaccard = -1
+            maxI = -1
+            for i, col in enumerate(partition):
+                jaccard = getModifiedJaccard(pfamDomains,
+                                            np.asarray(col, dtype=int))
+                logger.info("Level {} has Jaccard {}".format(i, jaccard))
+                if jaccard > maxJaccard:
+                    maxJaccard = jaccard
+                    maxI = i
+            logger.info("Using level {}".format(maxI))
+            self.level = maxI
+
+        else:
+            logger.info("Using specified level:", level)
+            try:
+                self.level = int(level)
+            except ValueError as err:
+                raise TypeError(f"{level} is not a valid level for the supernetwork")
+        try:
+            partition = partition[self.level]
+        except IndexError:
+            raise IndexError(f"Level passed: {self.level}. level should be between 0 and {len(partition)}") 
+
+        partition = generateNullModel(np.asarray(partition))
+
         # Generate the supernetwork
         communityEdgeList = {}
         for i, j, _ in edgelist:
@@ -313,11 +380,14 @@ class SuperNetworkNullModel:
         if subset is None:
             proteins = self.database.extractAllSuperNetworks(
                 pdbref=self.pdbref)
+            if proteins.count() == 0:
+                raise ValueError("no protein supernetworks in database!")
         else:
             proteins = subset
+            if len(proteins) == 0:
+                raise ValueError("no protein supernetworks in subset ")
         isomorphs = []
         for protein in proteins:
-
             G2 = nx.Graph()
             if type(protein) is dict:
                 for i, j, weight in protein['data']:
@@ -325,7 +395,7 @@ class SuperNetworkNullModel:
                 if nx.faster_could_be_isomorphic(G, G2) and nx.is_isomorphic(
                         G, G2):
                     isomorphs.append(protein['pdbref'])
-            elif type(protein) is SuperNetworkNullModel:
+            elif type(protein) is SuperNetwork or type(protein) is SuperNetworkNullModel :
                 for i, j, weight in protein.data:
                     G2.add_edge(i, j, weight=weight)
                 if nx.faster_could_be_isomorphic(G, G2) and nx.is_isomorphic(
@@ -334,6 +404,8 @@ class SuperNetworkNullModel:
                     if protein.chainref is not None:
                         isomorphicProtein += "_{}".format(protein.chainref)
                     isomorphs.append(isomorphicProtein)
+            else:
+                raise TypeError("either a dict or a supernetwork must be provided!")
         return isomorphs
 
     def getWeakIsomorphs(self, subset=None):
@@ -352,34 +424,60 @@ class SuperNetworkNullModel:
 
         G = nx.convert_node_labels_to_integers(G)
         # Get a cursor for all supernetworks in the database
-
-        if subset.any():
-            proteins = subset
-        else:
+        if subset is None:
             proteins = self.database.extractAllSuperNetworks(
                 pdbref=self.pdbref)
+            if proteins.count() == 0:
+                raise ValueError("no protein supernetworks in database!")
+        else:
+            proteins = subset
+            if len(proteins) == 0:
+                raise ValueError("no protein supernetworks in subset ")
         weakIsomorphs = []
         for protein in proteins:
             G2 = nx.Graph()
-            for i, j, weight in protein['data']:
-                G2.add_edge(i, j)
+            if type(protein) is dict:
+                for i, j, weight in protein['data']:
+                    G2.add_edge(i, j)
 
-            G2 = nx.convert_node_labels_to_integers(G2)
-            # Get the maximum common subgraph for the two supernetworks
-            try:
-                MCS = getMCS(G, G2)
-            except ValueError:
-                continue
-            if MCS:
-                similarity = MCS.number_of_nodes() / (
-                    max(G.number_of_nodes(), G2.number_of_nodes()))
+                G2 = nx.convert_node_labels_to_integers(G2)
+                # Get the maximum common subgraph for the two supernetworks
+                try:
+                    MCS = getMCS(G, G2)
+                except ValueError:
+                    continue
+                if MCS:
+                    similarity = MCS.number_of_nodes() / (
+                        max(G.number_of_nodes(), G2.number_of_nodes()))
+                else:
+                    similarity = 0
+
+                if similarity > 0.5:
+                    weakIsomorphs.append(
+                        [self.pdbref, protein['pdbref'],
+                        str(similarity)])
+            elif type(protein) is SuperNetwork or type(protein) is SuperNetworkNullModel:
+                for i, j, weight in protein.data:
+                    G2.add_edge(i, j)
+
+                G2 = nx.convert_node_labels_to_integers(G2)
+                # Get the maximum common subgraph for the two supernetworks
+                try:
+                    MCS = getMCS(G, G2)
+                except ValueError:
+                    continue
+                if MCS:
+                    similarity = MCS.number_of_nodes() / (
+                        max(G.number_of_nodes(), G2.number_of_nodes()))
+                else:
+                    similarity = 0
+
+                if similarity > 0.5:
+                    weakIsomorphs.append(
+                        [self.pdbref, protein.pdbref,
+                        str(similarity)])
             else:
-                similarity = 0
-
-            if similarity > 0.5:
-                weakIsomorphs.append(
-                    [self.pdbref, protein['pdbref'],
-                     str(similarity)])
+                raise TypeError("either dicts or supernetworks must be supplied!")
 
         return weakIsomorphs
 
