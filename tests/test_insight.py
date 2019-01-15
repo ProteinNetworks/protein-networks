@@ -115,7 +115,7 @@ def test_supernetwork_init_no_level_no_PFAM(mock_database):
 
 def test_supernetwork_init_malformed_level(mock_database):
     """
-    Test that if a non-int level is passed to the supernetwork then a TypeError is thrown. 
+    Test that if a non-int level is passed to the supernetwork then a TypeError is thrown.
     """
     db = proteinnetworks.database.Database(password="bla")
     partitionArgs = {
@@ -129,7 +129,7 @@ def test_supernetwork_init_malformed_level(mock_database):
     partition = proteinnetworks.partition.Partition(**partitionArgs)  # Tested by partition tests
     with pytest.raises(TypeError):
         superNetwork = proteinnetworks.insight.SuperNetwork(partition, level="bla")
-    
+
 
 def test_supernetwork_init_invalid_level(mock_database):
     """
@@ -153,23 +153,224 @@ def test_supernetwork_init_invalid_level(mock_database):
         superNetwork = proteinnetworks.insight.SuperNetwork(partition, level=10)
 
 
-# def test_supernetwork_retrieved_from_database(mock_database):
-#     """
-#     Test that if a supernetwork has been stored in the database it can be retrieved correctly.
-#     """
-#     db = proteinnetworks.database.Database(password="bla")
-#     partitionArgs = {
-#         'pdbref': '2vcr',
-#         'N': 10,
-#         'edgelistid': ObjectId('58dcf13fef677d54224a01da'),
-#         'detectionmethod': 'Infomap',
-#         'r': -1,
-#         "database": db
-#     }
-#     partition = proteinnetworks.partition.Partition(**partitionArgs)  # Tested by partition tests
-#     # with pytest.raises(ValueError):
-#     superNetwork = proteinnetworks.insight.SuperNetwork(partition, level=0)
-#     assert superNetwork
+def test_supernetwork_retrieved_from_database(mock_database):
+    """
+    Test that if a supernetwork has been stored in the database it can be retrieved correctly.
+    """
+    db = proteinnetworks.database.Database(password="bla")
+    partitionArgs = {
+        'pdbref': '1ubq',
+        'N': 10,
+        'edgelistid': ObjectId('58dbe03fef677d54224a01da'),
+        'detectionmethod': 'Infomap',
+        'r': -1,
+        "database": db
+    }
+    partition = proteinnetworks.partition.Partition(**partitionArgs)
+    superNetwork = proteinnetworks.insight.SuperNetwork(partition, level=1)
+    assert superNetwork.data == [[2, 1, 1],[3,2,8]]
+
+
+"""
+tests for the classmethod fromPartitionId
+
+inputs -> partitionid, database, level
+
+All malformed inputs will be caught by the Supernetwork __init__(), so just test
+the
+"""
+
+def test_frompartitionid_success(mock_database):
+
+    db = proteinnetworks.database.Database(password="bla")
+    partitionArgs = {
+        'pdbref': '1ubq',
+        'N': 10,
+        'edgelistid': ObjectId('58dbe03fef677d54224a01da'),
+        'detectionmethod': 'Infomap',
+        'r': -1,
+        "database": db
+    }
+    partition = proteinnetworks.partition.Partition(**partitionArgs)
+    supernetwork = proteinnetworks.insight.SuperNetwork.fromPartitionId(partition.partitionid, db)
+    assert supernetwork.data == [[2, 1, 1],[3,2,8]]
+
+
+
+"""
+tests for supernetwork.draw()
+FIXME currently plt.show is mocked so as not to do anything.
+"""
+def test_draw_success(mock_database):
+
+    db = proteinnetworks.database.Database(password="bla")
+    partitionArgs = {
+        'pdbref': '1ubq',
+        'N': 10,
+        'edgelistid': ObjectId('58dbe03fef677d54224a01da'),
+        'detectionmethod': 'Infomap',
+        'r': -1,
+        "database": db
+    }
+    partition = proteinnetworks.partition.Partition(**partitionArgs)
+    superNetwork = proteinnetworks.insight.SuperNetwork(partition, level=0)
+    superNetwork.draw()
+
+
+"""
+tests for supernetwork.getIsomorphs()
+
+inputs ->  the supernetwork itself, subset (a list of supernetworks)
+
+tests:
+
+supernetwork with no isomorphs
+supernetwork with multiple isomorphs
+
+Both of the above with a passed subset, plus catch an error if there aren't any proteins in the subset
+or the elements are of the wrong type.
+"""
+
+
+def test_getisomorphs_multipleisomorphsindatabase(mock_database):
+    """Test when there are multiple supernetworks with isomorphic graphs in the database"""
+    db = proteinnetworks.database.Database(password="bla")
+    partitionArgs = {
+        'pdbref': '1iso',
+        'N': 10,
+        'edgelistid': ObjectId('58abe03fef677d54224a01da'),
+        'detectionmethod': 'Infomap',
+        'r': -1,
+        "database": db
+    }
+    partition = proteinnetworks.partition.Partition(**partitionArgs)
+    superNetwork = proteinnetworks.insight.SuperNetwork(partition, level=0)
+    isomorphs = superNetwork.getIsomorphs()
+    assert '2iso' in isomorphs and '3iso' in isomorphs
+
+
+def test_getisomorphs_noisomorphsindatabase(mock_database):
+    """Test when there are multiple supernetworks with isomorphic graphs in the database"""
+    db = proteinnetworks.database.Database(password="bla")
+    partitionArgs = {
+        'pdbref': '1ubq',
+        'N': 10,
+        'edgelistid': ObjectId('58dbe03fef677d54224a01da'),
+        'detectionmethod': 'Infomap',
+        'r': -1,
+        "database": db
+    }
+    partition = proteinnetworks.partition.Partition(**partitionArgs)
+    superNetwork = proteinnetworks.insight.SuperNetwork(partition, level=0)
+    isomorphs = superNetwork.getIsomorphs()
+    assert not isomorphs
+
+
+
+def test_getisomorphs_multipleisomorphsindatabase_given_subset(mock_database):
+    """Test when there are multiple supernetworks with isomorphic graphs in the database, and we pass
+    the correct subset"""
+    db = proteinnetworks.database.Database(password="bla")
+
+    subset = []
+    partitionArgs = {
+        'pdbref': '2iso',
+        'N': 10,
+        'edgelistid': ObjectId('58abe03fef677d54224a02da'),
+        'detectionmethod': 'Infomap',
+        'r': -1,
+        "database": db
+    }
+    partition = proteinnetworks.partition.Partition(**partitionArgs)
+    superNetwork = proteinnetworks.insight.SuperNetwork(partition, level=0)
+    subset.append(superNetwork)
+    partitionArgs = {
+        'pdbref': '3iso',
+        'N': 10,
+        'edgelistid': ObjectId('58abe03fef677d54224a03da'),
+        'detectionmethod': 'Infomap',
+        'r': -1,
+        "database": db
+    }
+    partition = proteinnetworks.partition.Partition(**partitionArgs)
+    superNetwork = proteinnetworks.insight.SuperNetwork(partition, level=0)
+    subset.append(superNetwork)
+
+    partitionArgs = {
+        'pdbref': '1iso',
+        'N': 10,
+        'edgelistid': ObjectId('58abe03fef677d54224a01da'),
+        'detectionmethod': 'Infomap',
+        'r': -1,
+        "database": db
+    }
+    partition = proteinnetworks.partition.Partition(**partitionArgs)
+    superNetwork = proteinnetworks.insight.SuperNetwork(partition, level=0)
+    isomorphs = superNetwork.getIsomorphs(subset=subset)
+    assert '2iso' in isomorphs and '3iso' in isomorphs
+
+
+
+def test_getisomorphs_multipleisomorphsindatabase_given_partial_subset(mock_database):
+    """Test when there are multiple supernetworks with isomorphic graphs in the database, and we pass
+    the subset containing only one of those supernetworks"""
+    db = proteinnetworks.database.Database(password="bla")
+
+    subset = []
+    partitionArgs = {
+        'pdbref': '2iso',
+        'N': 10,
+        'edgelistid': ObjectId('58abe03fef677d54224a02da'),
+        'detectionmethod': 'Infomap',
+        'r': -1,
+        "database": db
+    }
+    partition = proteinnetworks.partition.Partition(**partitionArgs)
+    superNetwork = proteinnetworks.insight.SuperNetwork(partition, level=0)
+    subset.append(superNetwork)
+
+    partitionArgs = {
+        'pdbref': '1iso',
+        'N': 10,
+        'edgelistid': ObjectId('58abe03fef677d54224a01da'),
+        'detectionmethod': 'Infomap',
+        'r': -1,
+        "database": db
+    }
+    partition = proteinnetworks.partition.Partition(**partitionArgs)
+    superNetwork = proteinnetworks.insight.SuperNetwork(partition, level=0)
+    isomorphs = superNetwork.getIsomorphs(subset=subset)
+    assert '2iso' in isomorphs and '3iso' not in isomorphs
+
+
+
+def test_getisomorphs_multipleisomorphsindatabase_given_empty_subset(mock_database):
+    """Test when there are multiple supernetworks with isomorphic graphs in the database, and we pass
+    the subset containing only one of those supernetworks"""
+    db = proteinnetworks.database.Database(password="bla")
+
+    subset = []
+
+    partitionArgs = {
+        'pdbref': '1iso',
+        'N': 10,
+        'edgelistid': ObjectId('58abe03fef677d54224a01da'),
+        'detectionmethod': 'Infomap',
+        'r': -1,
+        "database": db
+    }
+    partition = proteinnetworks.partition.Partition(**partitionArgs)
+    superNetwork = proteinnetworks.insight.SuperNetwork(partition, level=0)
+    with pytest.raises(ValueError):
+        isomorphs = superNetwork.getIsomorphs(subset=subset)
+
+
+"""
+tests for supernetwork.getWeakIsomorphs()
+"""
+
+# INSERT TESTS HERE
+
 
 """
 tests for getModifiedJaccard()
@@ -242,7 +443,7 @@ def test_getmodifiedjaccard_invalidinputs_differentarrays():
 
 def test_getmodifiedjaccard_perfectoverlap():
     """
-    Check that if the PFAM array has perfect overlap with one domain, a score of 1.0 is returned. 
+    Check that if the PFAM array has perfect overlap with one domain, a score of 1.0 is returned.
     """
     expected = np.asarray([1]*40 + [2]*20 + [1]*40)
     generated = np.asarray([1]*40 + [2]*20 + [3]*20 + [4]*20)
@@ -401,7 +602,7 @@ Test:
 
 
 def test_getmcs_invalid_input():
-    """Test that inputs that aren't networkx undirected graphs are rejected.""" 
+    """Test that inputs that aren't networkx undirected graphs are rejected."""
     input1 = [[1,2], [2,3], [1,3]]
     input2 = "bla"
     input1 = nx.DiGraph(input1)
@@ -520,7 +721,7 @@ Tests:
 - invalid input (anything not an array of numbers ranging from 1 to m without gaps)
 - all nodes in their own community
 - all nodes in the same community
-- "normal" community structure  
+- "normal" community structure
 """
 
 def test_getshannonentropy_invalid_inputs():
@@ -564,7 +765,7 @@ tests:
 - completely disparate communities
 """
 def test_getmutualinfo_invalid_inputs_labels():
-    """Test that improperly labelled arrays are rejected.""" 
+    """Test that improperly labelled arrays are rejected."""
     testarray1 = [-1]*5 + [2]*5 +[4]*5
     testarray2 = [-1]*5 + [2]*5 +[4]*5
 
@@ -574,7 +775,7 @@ def test_getmutualinfo_invalid_inputs_labels():
 def test_getmutualinfo_invalid_inputs_lengths():
     """Test that different length arrays will be rejecteed."""
     testarray1 = [1]*5 + [2]*5 +[3]*5
-    testarray2 = [1]*5 + [2]*5 
+    testarray2 = [1]*5 + [2]*5
 
     with pytest.raises(TypeError):
         I = proteinnetworks.insight.getMutualInfo(testarray1, testarray2)
@@ -595,7 +796,7 @@ def test_getmutualinfo_unit_community():
 
 
 def test_getmutualinfo_matching_communities():
-    """Test that matching bipartitions have I=log(N).""" 
+    """Test that matching bipartitions have I=log(N)."""
     testarray1 = [1]*10+[2]*10
     testarray2 = [1]*10+[2]*10
     I = proteinnetworks.insight.getMutualInfo(testarray1, testarray2)
@@ -679,7 +880,7 @@ def test_getconductancefrompartition_validinputs():
         "database": db
     }
     partition = proteinnetworks.partition.Partition(**partitionArgs)
-    phis = proteinnetworks.insight.getConductanceFromPartition(network, partition)   
+    phis = proteinnetworks.insight.getConductanceFromPartition(network, partition)
     assert phis
 
 def test_getconductancefrompartition_invalidinputs():
@@ -703,8 +904,8 @@ def test_getconductancefrompartition_invalidinputs():
     }
     partition = proteinnetworks.partition.Partition(**partitionArgs)
     with pytest.raises(ValueError):
-        phis = proteinnetworks.insight.getConductanceFromPartition(network, partition)   
-    
+        phis = proteinnetworks.insight.getConductanceFromPartition(network, partition)
+
 
 """
 tests for getConductanceFromNodeSubset
@@ -719,7 +920,7 @@ invalid inputs:
     - malformed adjacency matrix?
 - disconnected adj_matrix
 - fully connected adj_matrix
-- random node subsets 
+- random node subsets
 """
 
 def test_getconductancefromnodesubset_incorrect_dimensions():
@@ -737,7 +938,7 @@ def test_getconductancefromnodesubset_non_numpy_array():
     node_subset = [0,1]
     with pytest.raises(TypeError):
         Q = proteinnetworks.insight.getConductanceFromNodeSubset(node_subset, adjacency)
-    
+
 def test_getconductancefromnodesubset_asymmetric_array():
     adjacency  = np.asarray([[0,0,0,1],[0,0,1,1],[0,1,0,0],[1,1,1,0]])
     node_subset = [0,1]
@@ -798,7 +999,7 @@ def test_getconductancefromnodesubset_random_graphs():
 tests for getModularityFromPartition.
 
 for every level in the partition, generate the adjacency matrix then find the modularity.
-Just test one successful path, others should be caught be subfunctions. 
+Just test one successful path, others should be caught be subfunctions.
 """
 
 def test_getmodularityfrompartition_success():
@@ -834,7 +1035,7 @@ Tests - a non-numpy array?
 - An array with negative weights?
 - A non-square array
 - A disconnected graph
-- A normal graph 
+- A normal graph
 """
 
 def test_getmodularityfromadjacencymatrix_nonnumpy_array():
@@ -884,7 +1085,7 @@ def test_getmodularityfromadjacencymatrix_disconnected_graph():
     Q = proteinnetworks.insight.getModularityFromAdjacencyMatrix(adjacency, comlist)
     assert math.isclose(Q,0.5)
 
-    
+
 def test_getmodularityfromadjacencymatrix_normal_communities():
     """test the modularity of random graphs, assert it is [-1, 1]"""
     numTrials = 100
@@ -928,7 +1129,7 @@ def test_edgelisttograph_incorrect_weights():
     edgelist = [[0,1,-1], [1,2,4], [4,5,3]]
     with pytest.raises(ValueError):
         G = proteinnetworks.insight.edgelistToGraph(edgelist)
-   
+
 def test_edgelisttograph_noninteger_nodelabels():
     """Tests that non-integer node labels will cause a ValueError."""
     edgelist = [["bla",1,1], [1,2,4], [4,5,3]]

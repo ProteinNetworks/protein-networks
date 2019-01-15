@@ -413,8 +413,7 @@ data = [{
     ],
     '_id': ObjectId('48dbd13f0f677d54224a01d9'),
     'pdbref': '2bla'
-},
-{
+}, {
     # multichain test pdb file
     'pdbref': '2bla',
     'chainref': "A",
@@ -430,8 +429,7 @@ data = [{
     '_id': ObjectId('58dcf13fef677d54335a01da'),
     'date': datetime.datetime(2018, 3, 29, 16, 26, 39, 894000),
     'scaling': 4.5
-},
-{
+}, {
     # PFAM mapping
     "pdbref": "1ubq",
     "doctype": "mapping",
@@ -442,19 +440,148 @@ data = [{
         "endresidue": 3,
         "pfamref": "bla"
     }
-},
-
-# {
-#     # Supernetwork
-#     'pdbref': '2vcr',
-#     'doctype': 'supernetwork',
-#     'partitionid': ObjectId('58dbe045ef677d54224a01d2'),
-#     'level': 0,
-#     'data': [[2, 1, 1]],
-#     "_id": ObjectId("58dbe045ef677d54224a01d2"),
-#     'date': datetime.datetime(2018, 3, 29, 16, 26, 39, 894000)
-# }
-
+}, {
+    # Supernetwork
+    'pdbref': '1ubq',
+    'doctype': 'supernetwork',
+    'partitionid': ObjectId('58dbe045ef677d54224a01dc'),
+    'level': 1,
+    'data': [[2, 1, 1],[3,2,8]],
+    "_id": ObjectId("58dbe045ef677d54224a01d2"),
+    'date': datetime.datetime(2018, 3, 29, 16, 26, 39, 894000)
+}, {
+    # Some fake edgelists, partitions, and supernetworks for getIsomorphs and getWeakIsomorphs()
+    'pdbref': '1iso',
+    'data':
+    [[2, 1, 44], [3, 1, 40], [3, 2, 56], [4, 2, 56], [4, 3, 70], [5, 3, 23],
+     [5, 4, 40], [6, 4, 13], [6, 5, 37], [7, 5, 23], [7, 6, 48], [8, 6, 15],
+     [8, 7, 46], [9, 6, 1], [9, 7, 43], [9, 8, 40], [10, 6, 13], [10, 7, 22],
+     [31, 26, 2], [31, 27, 20], [31, 28, 37], [31, 29, 22], [31, 30, 39],
+     [75, 73, 20], [75, 74, 25], [76, 73, 2], [76, 74, 5], [76, 75, 19]],
+    'doctype': 'edgelist',
+    'edgelisttype': 'residue',
+    'hydrogenstatus': 'noH',
+    '_id': ObjectId('58abe03fef677d54224a01da'),
+    'date': datetime.datetime(2017, 3, 29, 16, 26, 39, 894000),
+    'scaling': 4.5
+}, {
+    'pdbref': '1iso',
+    'data': [[
+        3, 3, 3, 3, 6, 6, 6, 6, 6, 6, 6, 6, 6, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1,
+        5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 2, 2, 2, 2, 2, 2, 2, 4, 4, 4, 4, 4, 4,
+        4, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 4, 4, 4, 2, 2, 2, 2,
+        2, 2, 2, 2
+    ], [
+        37, 38, 35, 34, 68, 70, 71, 74, 75, 76, 73, 72, 69, 42, 36, 45, 39, 12,
+        10, 17, 5, 8, 2, 9, 62, 60, 57, 65, 61, 58, 59, 66, 63, 64, 67, 23, 28,
+        26, 29, 21, 19, 22, 47, 49, 46, 55, 56, 54, 53, 50, 14, 11, 18, 7, 6,
+        3, 15, 13, 1, 16, 4, 44, 43, 41, 40, 52, 48, 51, 20, 27, 25, 24, 30,
+        31, 32, 33
+    ]],
+    'doctype': 'partition',
+    'N': 10,
+    'edgelistid': ObjectId('58abe03fef677d54224a01da'),
+    '_id': ObjectId('58dbe145ef677d54224a01dc'),
+    'detectionmethod': 'Infomap',
+    'date': datetime.datetime(2017, 3, 29, 16, 26, 45, 623000)
+}, {
+    # Supernetwork
+    'pdbref': '1iso',
+    'doctype': 'supernetwork',
+    'partitionid': ObjectId('58dbe145ef677d54224a01dc'),
+    'level': 0,
+    'data': [[1, 2, 1],[2,3,1], [3,1,1]],
+    "_id": ObjectId("58dbe045ff677d54224a01d2"),
+    'date': datetime.datetime(2018, 3, 29, 16, 26, 39, 894000)
+}, {
+    # Some fake edgelists, partitions, and supernetworks for getIsomorphs and getWeakIsomorphs()
+    'pdbref': '2iso',
+    'data':
+    [[2, 1, 44], [3, 1, 40], [3, 2, 56], [4, 2, 56], [4, 3, 70], [5, 3, 23],
+     [5, 4, 40], [6, 4, 13], [6, 5, 37], [7, 5, 23], [7, 6, 48], [8, 6, 15],
+     [8, 7, 46], [9, 6, 1], [9, 7, 43], [9, 8, 40], [10, 6, 13], [10, 7, 22],
+     [31, 26, 2], [31, 27, 20], [31, 28, 37], [31, 29, 22], [31, 30, 39],
+     [75, 73, 20], [75, 74, 25], [76, 73, 2], [76, 74, 5], [76, 75, 19]],
+    'doctype': 'edgelist',
+    'edgelisttype': 'residue',
+    'hydrogenstatus': 'noH',
+    '_id': ObjectId('58abe03fef677d54224a02da'),
+    'date': datetime.datetime(2017, 3, 29, 16, 26, 39, 894000),
+    'scaling': 4.5
+}, {
+    'pdbref': '2iso',
+    'data': [[
+        3, 3, 3, 3, 6, 6, 6, 6, 6, 6, 6, 6, 6, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1,
+        5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 2, 2, 2, 2, 2, 2, 2, 4, 4, 4, 4, 4, 4,
+        4, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 4, 4, 4, 2, 2, 2, 2,
+        2, 2, 2, 2
+    ], [
+        37, 38, 35, 34, 68, 70, 71, 74, 75, 76, 73, 72, 69, 42, 36, 45, 39, 12,
+        10, 17, 5, 8, 2, 9, 62, 60, 57, 65, 61, 58, 59, 66, 63, 64, 67, 23, 28,
+        26, 29, 21, 19, 22, 47, 49, 46, 55, 56, 54, 53, 50, 14, 11, 18, 7, 6,
+        3, 15, 13, 1, 16, 4, 44, 43, 41, 40, 52, 48, 51, 20, 27, 25, 24, 30,
+        31, 32, 33
+    ]],
+    'doctype': 'partition',
+    'N': 10,
+    'edgelistid': ObjectId('58abe03fef677d54224a02da'),
+    '_id': ObjectId('58dbe145ef677d54224a02dc'),
+    'detectionmethod': 'Infomap',
+    'date': datetime.datetime(2017, 3, 29, 16, 26, 45, 623000)
+}, {
+    # Supernetwork
+    'pdbref': '2iso',
+    'doctype': 'supernetwork',
+    'partitionid': ObjectId('58dbe145ef677d54224a02dc'),
+    'level': 0,
+    'data': [[1, 2, 1],[2,3,1], [3,1,1]],
+    "_id": ObjectId("58dbe045ff677d54224a02d2"),
+    'date': datetime.datetime(2018, 3, 29, 16, 26, 39, 894000)
+}, {
+    # Some fake edgelists, partitions, and supernetworks for getIsomorphs and getWeakIsomorphs()
+    'pdbref': '3iso',
+    'data':
+    [[2, 1, 44], [3, 1, 40], [3, 2, 56], [4, 2, 56], [4, 3, 70], [5, 3, 23],
+     [5, 4, 40], [6, 4, 13], [6, 5, 37], [7, 5, 23], [7, 6, 48], [8, 6, 15],
+     [8, 7, 46], [9, 6, 1], [9, 7, 43], [9, 8, 40], [10, 6, 13], [10, 7, 22],
+     [31, 26, 2], [31, 27, 20], [31, 28, 37], [31, 29, 22], [31, 30, 39],
+     [75, 73, 20], [75, 74, 25], [76, 73, 2], [76, 74, 5], [76, 75, 19]],
+    'doctype': 'edgelist',
+    'edgelisttype': 'residue',
+    'hydrogenstatus': 'noH',
+    '_id': ObjectId('58abe03fef677d54224a03da'),
+    'date': datetime.datetime(2017, 3, 29, 16, 26, 39, 894000),
+    'scaling': 4.5
+}, {
+    'pdbref': '3iso',
+    'data': [[
+        3, 3, 3, 3, 6, 6, 6, 6, 6, 6, 6, 6, 6, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1,
+        5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 2, 2, 2, 2, 2, 2, 2, 4, 4, 4, 4, 4, 4,
+        4, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 4, 4, 4, 2, 2, 2, 2,
+        2, 2, 2, 2
+    ], [
+        37, 38, 35, 34, 68, 70, 71, 74, 75, 76, 73, 72, 69, 42, 36, 45, 39, 12,
+        10, 17, 5, 8, 2, 9, 62, 60, 57, 65, 61, 58, 59, 66, 63, 64, 67, 23, 28,
+        26, 29, 21, 19, 22, 47, 49, 46, 55, 56, 54, 53, 50, 14, 11, 18, 7, 6,
+        3, 15, 13, 1, 16, 4, 44, 43, 41, 40, 52, 48, 51, 20, 27, 25, 24, 30,
+        31, 32, 33
+    ]],
+    'doctype': 'partition',
+    'N': 10,
+    'edgelistid': ObjectId('58abe03fef677d54224a03da'),
+    '_id': ObjectId('58dbe145ef677d54224a03dc'),
+    'detectionmethod': 'Infomap',
+    'date': datetime.datetime(2017, 3, 29, 16, 26, 45, 623000)
+}, {
+    # Supernetwork
+    'pdbref': '3iso',
+    'doctype': 'supernetwork',
+    'partitionid': ObjectId('58dbe145ef677d54224a03dc'),
+    'level': 0,
+    'data': [[1, 2, 1],[2,3,1], [3,1,1]],
+    "_id": ObjectId("58dbe045ff677d54224a03d2"),
+    'date': datetime.datetime(2018, 3, 29, 16, 26, 39, 894000)
+}
 ]
 
 
@@ -506,7 +633,12 @@ def mock_database(monkeypatch):
                             if key not in doc:
                                 continue
                             counter += 1
-                            if doc[key] != query[key]:
+                            # deal with queries of the kind "pdbref": {"$ne": pdbref}
+                            if type(query[key]) == dict and "$ne" in query[key]:
+                                if doc[key] == query[key]["$ne"]:
+                                    match = False
+
+                            elif doc[key] != query[key]:
                                 match = False
                         if match and counter:
                             results.append(doc)

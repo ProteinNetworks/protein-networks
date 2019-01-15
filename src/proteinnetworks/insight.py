@@ -170,8 +170,12 @@ class SuperNetwork:
         if subset is None:
             proteins = self.database.extractAllSuperNetworks(
                 pdbref=self.pdbref)
+            if proteins.count() == 0:
+                raise ValueError("no protein supernetworks in database!")
         else:
             proteins = subset
+            if len(proteins) == 0:
+                raise ValueError("no protein supernetworks in subset ")
         isomorphs = []
         for protein in proteins:
             G2 = nx.Graph()
