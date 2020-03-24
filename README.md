@@ -9,10 +9,13 @@ This code assumes that:
 - The "Infomap" community detection method can be found in $PATH. This code predates the Python API, so needs the compiled version [here](https://github.com/mapequation/infomap). Code has been tested with version 0.18.5.
 
 Todo:
-- [ ] Add MongoDB configuration (even if hardcoded somewhere)
-- [ ] Check test coverage
+
+- [x] Check test coverage
+- [x] Add MongoDB configuration (even if hardcoded somewhere)
 - [ ] Add sphinx docs 
 - [ ] Add example notebooks
+- [ ] Add README to scripts file
+- [ ] Add a test coverage badge?
 
 ## Installation
 

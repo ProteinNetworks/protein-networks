@@ -1,6 +1,9 @@
-"""Database interface methods (perhaps should be a class).
+"""
+database.py
 
-MongoDB database format:
+Contains the Database class, which wraps a MongoDB database.
+
+The database has the following schema.
 database: proteinnetworks
 collection: proteinnetworks
 document has fields:
@@ -29,8 +32,6 @@ if doctype == partition:
 if doctype == pdbfile:
     data: The PDBfile itself (sans headers) as an array of strings
 
-
-NB this might be too large for MongoDB to handle (>16MB)
 """
 
 import pymongo
@@ -45,16 +46,9 @@ from bson.objectid import ObjectId
 
 loggingLevels = {0: logging.ERROR, 1: logging.WARNING, 2: logging.INFO, 3: logging.DEBUG}
 
-
-# ch = logging.StreamHandler()
-# ch.setLevel(logging.getLogger().getEffectiveLevel())
-# # create formatter and add it to the handlers
-# formatter = logging.Formatter(
-#     '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-# ch.setFormatter(formatter)
-# # add the handlers to logger
-# logger.addHandler(ch)
-
+# MongoDB params
+MONGO_USER = "writeAccess"
+MONGO_LOCATION = "s7.tcm.phy.private.cam.ac.uk/proteinnetworks"
 
 class Database:
     """A wrapper around MongoDB."""
@@ -70,16 +64,14 @@ class Database:
             self.logger.removeHandler(handler)
 
         ch = logging.StreamHandler()
-        # ch.setFormatter()
         self.logger.addHandler(ch)
 
         if not local:
             if not password:
                 password = input("password: ").strip()
-            # Server is stored locally; if I can't find it in 1 second its not running.
+            # Server is stored on the same network; if I can't find it in 1 second its not running.
             self.client = pymongo.MongoClient(
-                "mongodb://writeAccess:" + password +
-                "@s7.tcm.phy.private.cam.ac.uk/proteinnetworks",
+                f"mongodb://{MONGO_USER}:{password}@{MONGO_LOCATION}",
                 serverSelectionTimeoutMS=1000)
             try:
                 # The ismaster command is cheap and does not require auth.
